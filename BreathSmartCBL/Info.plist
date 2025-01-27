@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>Bluetooth Always Usage Description</key>
+	<string>"This app needs to use Bluetooth."</string>
+	<key>Bluetooth Peripheral Usage Description</key>
+	<string>"This app uses Bluetooth to communicate with devices."</string>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>"App communicates using Core Bluetooth"</string>
+	</array>
+</dict>
+</plist>
