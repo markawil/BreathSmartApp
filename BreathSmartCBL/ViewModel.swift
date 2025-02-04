@@ -22,13 +22,15 @@ struct Device: Identifiable {
 
 class CBViewModel: NSObject, ObservableObject {
     
-    // should just be devices we want to connec to
+    // should just be devices we want to connect to
     @Published var devices: [Device] = []
     
     // temp to show all devices
     @Published var discoveredPeripherals = [CBPeripheral]()
     @Published var state: CBState = .notAvailable
     @Published var isConnected: Bool = false
+    @Published var servicesAvailable: Bool = false
+    @Published var isScanning: Bool = false
     
     private var centralManager: CBCentralManager!
     private var connectedPeripheral: CBPeripheral? {
@@ -36,6 +38,8 @@ class CBViewModel: NSObject, ObservableObject {
             isConnected = connectedPeripheral != nil
         }
     }
+    
+    private var scanContinuation: CheckedContinuation<Void, Never>?
     
     // needed to show mocked preview
     init(with devices: [Device] = [],
@@ -48,8 +52,37 @@ class CBViewModel: NSObject, ObservableObject {
         centralManager = CBCentralManager(delegate: self, queue: nil)
     }
     
-    func startScan() {
-        centralManager.scanForPeripherals(withServices: nil)
+    func startScan() async {
+        guard !centralManager.isScanning else { return }
+        
+        devices = []
+        discoveredPeripherals = []
+        
+        await withCheckedContinuation { [weak self] continuation in
+            self?.scanContinuation = continuation
+            self?.centralManager.scanForPeripherals(withServices: nil)
+        }
+    }
+    
+    func connect(to peripheral: CBPeripheral) {
+        centralManager.connect(peripheral, options: nil)
+    }
+    
+    func disconect() {
+        guard let peripheral = self.connectedPeripheral else { return }
+        guard let central = self.centralManager else { return }
+        
+        central.cancelPeripheralConnection(peripheral)
+    }
+    
+    func discoverService() {
+        guard let connectedPeripheral = self.connectedPeripheral else { return }
+        connectedPeripheral.discoverServices([])
+    }
+    
+    func discoverCharacteristics(for service: CBService) {
+        guard let connectedPeripheral = self.connectedPeripheral else { return }
+        connectedPeripheral.discoverCharacteristics([], for: service)
     }
 }
 
@@ -81,7 +114,10 @@ extension CBViewModel: CBCentralManagerDelegate {
             // Bluetooth is enabled, authorized, and ready for app use.
             print("Powered on state")
             state = .goodToGo
-            startScan()
+            Task {
+                await startScan()
+            }
+            
         @unknown default:
             print("default state")
             state = .notAvailable
@@ -93,6 +129,7 @@ extension CBViewModel: CBCentralManagerDelegate {
                         advertisementData: [String : Any],
                         rssi RSSI: NSNumber) {
         guard central == self.centralManager else { return }
+        self.scanContinuation?.resume()
         guard !discoveredPeripherals.contains(where: { $0.identifier == peripheral.identifier }) else { return }
         
         // it's new add it
@@ -104,10 +141,6 @@ extension CBViewModel: CBCentralManagerDelegate {
                    rsi: RSSI.intValue)
         }
         self.devices.append(contentsOf: periphDevices)
-    }
-    
-    func connect(to peripheral: CBPeripheral) {
-        centralManager.connect(peripheral, options: nil)
     }
     
     func centralManager(_ central: CBCentralManager,
@@ -128,15 +161,22 @@ extension CBViewModel: CBCentralManagerDelegate {
         guard self.connectedPeripheral?.identifier == peripheral.identifier else { return }
         self.connectedPeripheral = nil
     }
-    
-    func disconect() {
-        guard let peripheral = self.connectedPeripheral else { return }
-        guard let central = self.centralManager else { return }
-        
-        central.cancelPeripheralConnection(peripheral)
-    }
 }
 
 extension CBViewModel: CBPeripheralDelegate {
+    
+    func peripheral(_ peripheral: CBPeripheral,
+                    didDiscoverServices error: (any Error)?) {
+        self.servicesAvailable = true
+        
+        // use connectedPeripheral.services to see the values
+    }
+    
+    func peripheral(_ peripheral: CBPeripheral,
+                    didDiscoverCharacteristicsFor service: CBService,
+                    error: (any Error)?) {
+        
+        // use
+    }
     
 }

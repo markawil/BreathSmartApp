@@ -47,6 +47,9 @@ struct ContentView: View {
                     }
                     .background(Color(uiColor: UIColor.systemGroupedBackground))
                     .padding([.leading, .trailing], -20)
+                    .refreshable {
+                        await viewModel.startScan()
+                    }
                 }
             }
             .background(Color(uiColor: UIColor.systemGroupedBackground))
