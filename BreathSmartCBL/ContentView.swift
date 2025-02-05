@@ -9,7 +9,7 @@ import SwiftUI
 
 struct ContentView: View {
     
-    @StateObject var viewModel: CBViewModel
+    @ObservedObject var viewModel: CBViewModel
     
     @State private var showBLENotAvailableAlert = false
     

@@ -129,7 +129,6 @@ extension CBViewModel: CBCentralManagerDelegate {
                         advertisementData: [String : Any],
                         rssi RSSI: NSNumber) {
         guard central == self.centralManager else { return }
-        self.scanContinuation?.resume()
         guard !discoveredPeripherals.contains(where: { $0.identifier == peripheral.identifier }) else { return }
         
         // it's new add it
@@ -141,6 +140,11 @@ extension CBViewModel: CBCentralManagerDelegate {
                    rsi: RSSI.intValue)
         }
         self.devices.append(contentsOf: periphDevices)
+        
+        // tell the refreshable continuation to end
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) { [weak self] in
+            self?.scanContinuation?.resume()
+        }
     }
     
     func centralManager(_ central: CBCentralManager,
