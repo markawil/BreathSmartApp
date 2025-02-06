@@ -8,11 +8,46 @@
 import SwiftUI
 
 struct DeviceDetailsView: View {
+    
+    @EnvironmentObject var viewModel: CBViewModel
+    
     var body: some View {
-        Text(/*@START_MENU_TOKEN@*/"Hello, World!"/*@END_MENU_TOKEN@*/)
+        VStack {
+            Text("Connected...").font(.title)
+                .padding()
+            Spacer()
+            HStack {
+                Button("ON  ") {
+                    viewModel.sendOn()
+                }
+                .padding()
+                .background(.green)
+                .foregroundColor(.white)
+                .font(.largeTitle)
+                .cornerRadius(15)
+                Button("OFF") {
+                    viewModel.sendOff()
+                }
+                .padding()
+                .background(.red)
+                .foregroundColor(.white)
+                .font(.largeTitle)
+                .cornerRadius(15)
+            }
+            Spacer()
+            Button("Disconnect") {
+                viewModel.disconect()
+            }
+            .padding()
+            .background(.blue)
+            .foregroundColor(.white)
+            .font(.largeTitle)
+            .cornerRadius(15)
+        }
     }
 }
 
 #Preview {
     DeviceDetailsView()
+        .environmentObject(CBViewModel(with: mockDevices, state: .goodToGo))
 }

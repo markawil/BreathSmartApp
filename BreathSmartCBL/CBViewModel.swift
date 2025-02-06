@@ -13,11 +13,20 @@ public enum CBState {
     case goodToGo
 }
 
-struct Device: Identifiable {
+struct Device: Identifiable, Hashable {
     let id: UUID
     let name: String
     let advertisementData: [String : Any]
     let rsi: Int
+    let description: String = ""
+    
+    static func == (lhs: Device, rhs: Device) -> Bool {
+        lhs.id == rhs.id
+    }
+    
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(self)
+    }
 }
 
 class CBViewModel: NSObject, ObservableObject {
@@ -83,6 +92,21 @@ class CBViewModel: NSObject, ObservableObject {
     func discoverCharacteristics(for service: CBService) {
         guard let connectedPeripheral = self.connectedPeripheral else { return }
         connectedPeripheral.discoverCharacteristics([], for: service)
+    }
+    
+    func sendOn() {
+        send(message: "YES")
+    }
+    
+    func sendOff() {
+        send(message: "NO")
+    }
+    
+    private func send(message: String) {
+        guard let peripheral = connectedPeripheral else { return }
+        
+        guard let data = message.data(using: .utf8) else { return }
+//        peripheral.writeValue(data, for: <#T##CBDescriptor#>)
     }
 }
 

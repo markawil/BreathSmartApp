@@ -13,6 +13,8 @@ struct ContentView: View {
     
     @State private var showBLENotAvailableAlert = false
     
+    @State var selectedDevice: Device?
+    
     var body: some View {
         NavigationStack {
             VStack {
@@ -21,9 +23,11 @@ struct ContentView: View {
                         .padding()
                         .background(.white)
                 } else {
-                    List {
-                        ForEach(viewModel.devices, id: \.id) {
-                            device in
+                    List(viewModel.devices, id: \.id) {
+                        device in
+                        Button {
+                            self.selectedDevice = device
+                        } label: {
                             VStack {
                                 HStack {
                                     Text(device.name)
@@ -40,15 +44,20 @@ struct ContentView: View {
                                 .padding()
                                 .background(Color(uiColor: .white))
                             }
-                            .cornerRadius(15)
-                            .listRowBackground(Color.clear)
-                            .listRowSeparator(.hidden)
                         }
+                        .tint(.black)
+                        .cornerRadius(15)
+                        .listRowBackground(Color.clear)
+                        .listRowSeparator(.hidden)
                     }
                     .background(Color(uiColor: UIColor.systemGroupedBackground))
                     .padding([.leading, .trailing], -20)
                     .refreshable {
                         await viewModel.startScan()
+                    }
+                    .navigationDestination(item: $selectedDevice) { device in
+                        DeviceDetailsView()
+                            .environmentObject(viewModel)
                     }
                 }
             }
@@ -64,15 +73,16 @@ struct ContentView: View {
     }
 }
 
-struct ConttentView_Previews: PreviewProvider {
+let mockDevices: [Device] = [
+    Device(id: UUID(), name: "device 1", advertisementData: [:], rsi: 4),
+    Device(id: UUID(), name: "device 2", advertisementData: [:], rsi: 2),
+    Device(id: UUID(), name: "device 3", advertisementData: [:], rsi: 1),
+]
+
+struct ContentView_Previews: PreviewProvider {
     
-    static let devices: [Device] = [
-        Device(id: UUID(), name: "device 1", advertisementData: [:], rsi: 4),
-        Device(id: UUID(), name: "device 2", advertisementData: [:], rsi: 2),
-        Device(id: UUID(), name: "device 3", advertisementData: [:], rsi: 1),
-    ]
     static var previews: some View {
-        ContentView(viewModel: CBViewModel(with: devices,
+        ContentView(viewModel: CBViewModel(with: mockDevices,
                                            state: .goodToGo))
     }
     
