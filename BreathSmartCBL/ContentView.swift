@@ -13,7 +13,9 @@ struct ContentView: View {
     
     @State private var showBLENotAvailableAlert = false
     
-    @State var selectedDevice: Device?
+    @State private var selectedDevice: Device?
+    @State private var showConnectedScreen = false
+    @State private var showConnectionPopUp = false
     
     var body: some View {
         NavigationStack {
@@ -22,11 +24,23 @@ struct ContentView: View {
                     Text("BLE is not available!")
                         .padding()
                         .background(.white)
+                } else if viewModel.devices.isEmpty {
+                    Button {
+                        Task {
+                            await viewModel.startScan()
+                        }
+                    } label: {
+                        Text("Scan for BLE Devices")
+                            .font(.headline)
+                            .background(.white)
+                    }
                 } else {
                     List(viewModel.devices, id: \.id) {
                         device in
                         Button {
                             self.selectedDevice = device
+                            self.viewModel.connect(to: device)
+                            self.showConnectionPopUp = true
                         } label: {
                             VStack {
                                 HStack {
@@ -55,19 +69,23 @@ struct ContentView: View {
                     .refreshable {
                         await viewModel.startScan()
                     }
-                    .navigationDestination(item: $selectedDevice) { device in
+                    .navigationDestination(isPresented: $viewModel.isConnected) {
                         DeviceDetailsView()
                             .environmentObject(viewModel)
                     }
                 }
             }
             .background(Color(uiColor: UIColor.systemGroupedBackground))
-            .navigationTitle("Breath Smart")
+            .navigationTitle("CoreBluetooth")
             .toolbarBackground(Color(.blue), for: .navigationBar)
             .toolbarBackground(.visible, for: .navigationBar)
             .toolbarColorScheme(.dark, for: .navigationBar)
             .onAppear() {
-            //    viewModel.startCB()
+                self.showConnectionPopUp = false
+                viewModel.startCB()
+            }
+            .fullScreenCover(isPresented: $showConnectionPopUp) {
+                FullScreenConnectingView(deviceName: selectedDevice?.name ?? "??")
             }
         }
     }
@@ -79,11 +97,12 @@ let mockDevices: [Device] = [
     Device(id: UUID(), name: "device 3", advertisementData: [:], rsi: 1),
 ]
 
+let mockViewModel = CBViewModel(with: [],
+                                state: .mockOnly)
+
 struct ContentView_Previews: PreviewProvider {
     
     static var previews: some View {
-        ContentView(viewModel: CBViewModel(with: mockDevices,
-                                           state: .goodToGo))
+        ContentView(viewModel: mockViewModel)
     }
-    
 }

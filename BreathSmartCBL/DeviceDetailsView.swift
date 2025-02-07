@@ -5,49 +5,76 @@
 //  Created by MarkWilkinson on 1/24/25.
 //
 
+import CoreBluetooth
 import SwiftUI
 
 struct DeviceDetailsView: View {
     
     @EnvironmentObject var viewModel: CBViewModel
     
+    let mockServices: [CBUUID] = [CBUUID(string: Constants.UUID.Service.heartRateService),
+                                  CBUUID(string: Constants.UUID.Service.bodySensorLocation),
+                                  CBUUID(string: Constants.UUID.Service.heartRateMeasurement)]
+    
+    let mockCharacteristics: [CBUUID] = [CBUUID(string: Constants.UUID.Characteristic.heartRateCharacteristic),
+                                         CBUUID(string: Constants.UUID.Characteristic.batteryCharacteristic),
+                                         CBUUID(string: Constants.UUID.Characteristic.deviceInfoCharacteristic)]
+    
+    var useMockServices: Bool = false
+    
+    @State private var selectedService: CBUUID? = nil
+    
     var body: some View {
         VStack {
-            Text("Connected...").font(.title)
-                .padding()
-            Spacer()
             HStack {
-                Button("ON  ") {
-                    viewModel.sendOn()
+                Spacer()
+                Text("\(viewModel.connectedPeripheral?.name ?? "Device 1")")
+                    .font(.title2)
+                    .padding()
+                Spacer()
+                if let name = viewModel.connectedPeripheral?.name {
+                    if name.starts(with: "HM") {
+                        Button {
+                            
+                        } label: {
+                            Text("Control")
+                        }
+                    }
                 }
-                .padding()
-                .background(.green)
-                .foregroundColor(.white)
-                .font(.largeTitle)
-                .cornerRadius(15)
-                Button("OFF") {
-                    viewModel.sendOff()
+            }
+            if useMockServices {
+                List {
+                    Section(header: Text("Advertised Services")) {
+                        ForEach(mockServices, id: \.uuidString) { service in
+                            Button {
+                                
+                            } label: {
+                                Text(service.uuidString)
+                            }
+                            .tint(.black)
+                        }
+                    }
+                    Section(header: Text("Attributes")) {
+                        ForEach(mockCharacteristics, id: \.uuidString) { characteristic in
+                            Text(characteristic.uuidString)
+                        }
+                    }
                 }
-                .padding()
-                .background(.red)
-                .foregroundColor(.white)
-                .font(.largeTitle)
-                .cornerRadius(15)
+                
+            } else if let servicesAvailable = viewModel.connectedPeripheral?.services {
+                List(servicesAvailable, id: \.uuid) { service in
+                    VStack {
+                        Text(service.uuid.uuidString)
+                            .font(.headline)
+                            .padding()
+                    }
+                }
             }
-            Spacer()
-            Button("Disconnect") {
-                viewModel.disconect()
-            }
-            .padding()
-            .background(.blue)
-            .foregroundColor(.white)
-            .font(.largeTitle)
-            .cornerRadius(15)
         }
     }
 }
 
 #Preview {
-    DeviceDetailsView()
-        .environmentObject(CBViewModel(with: mockDevices, state: .goodToGo))
+    DeviceDetailsView(useMockServices: true)
+        .environmentObject(mockViewModel)
 }

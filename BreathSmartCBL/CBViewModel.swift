@@ -11,9 +11,11 @@ public enum CBState {
     case resetting
     case poweredOff
     case goodToGo
+    case mockOnly
 }
 
 struct Device: Identifiable, Hashable {
+    
     let id: UUID
     let name: String
     let advertisementData: [String : Any]
@@ -42,13 +44,18 @@ class CBViewModel: NSObject, ObservableObject {
     @Published var isScanning: Bool = false
     
     private var centralManager: CBCentralManager!
-    private var connectedPeripheral: CBPeripheral? {
+    private(set) var connectedPeripheral: CBPeripheral? {
         didSet {
             isConnected = connectedPeripheral != nil
+            connectingPeripheral = nil
         }
     }
+    private(set) var connectingPeripheral: CBPeripheral?
     
     private var scanContinuation: CheckedContinuation<Void, Never>?
+    
+    // Keep track of characteristics that were found for the connectedPeripheral
+    private var characteristics: [String: CBCharacteristic] = [:]
     
     // needed to show mocked preview
     init(with devices: [Device] = [],
@@ -58,10 +65,13 @@ class CBViewModel: NSObject, ObservableObject {
     }
     
     func startCB() {
+        guard state != .mockOnly else { return }
+        
         centralManager = CBCentralManager(delegate: self, queue: nil)
     }
     
     func startScan() async {
+        guard state != .mockOnly else { return }
         guard !centralManager.isScanning else { return }
         
         devices = []
@@ -69,29 +79,48 @@ class CBViewModel: NSObject, ObservableObject {
         
         await withCheckedContinuation { [weak self] continuation in
             self?.scanContinuation = continuation
-            self?.centralManager.scanForPeripherals(withServices: nil)
+            let options: [String: Any] = [
+                CBCentralManagerScanOptionAllowDuplicatesKey: false
+            ]
+            self?.centralManager.scanForPeripherals(withServices: nil, options: options)
         }
     }
     
-    func connect(to peripheral: CBPeripheral) {
+    func connect(to device: Device) {
+        guard state != .mockOnly else { return }
+        guard let peripheral = discoveredPeripherals.first(where: { $0.identifier == device.id }) else {
+            // show error message that periph wasn't in the discovered list
+            return
+        }
+        
+        self.connectingPeripheral = peripheral
         centralManager.connect(peripheral, options: nil)
     }
     
-    func disconect() {
-        guard let peripheral = self.connectedPeripheral else { return }
-        guard let central = self.centralManager else { return }
+    func cancelConnection() {
+        guard let peripheral = self.connectingPeripheral else { return }
         
-        central.cancelPeripheralConnection(peripheral)
+        centralManager.cancelPeripheralConnection(peripheral)
     }
     
-    func discoverService() {
+    func disconnect() {
+        guard let peripheral = self.connectedPeripheral else { return }
+        guard let manager = self.centralManager else { return }
+        
+        manager.cancelPeripheralConnection(peripheral)
+        self.connectedPeripheral = nil
+        self.characteristics = [:]
+    }
+    
+    func discoverServices() {
         guard let connectedPeripheral = self.connectedPeripheral else { return }
         connectedPeripheral.discoverServices([])
     }
     
-    func discoverCharacteristics(for service: CBService) {
-        guard let connectedPeripheral = self.connectedPeripheral else { return }
-        connectedPeripheral.discoverCharacteristics([], for: service)
+    private func initialReadCharacteristics() {
+        guard let peripheral = self.connectedPeripheral else { return }
+        
+        // read specific characteristics here if needed.
     }
     
     func sendOn() {
@@ -141,10 +170,18 @@ extension CBViewModel: CBCentralManagerDelegate {
             Task {
                 await startScan()
             }
-            
         @unknown default:
             print("default state")
             state = .notAvailable
+        }
+        
+        // per Kirill Sidorov's guide/project, you should disconnect if currently connected and
+        // one state changes to anything but poweredOn.
+        if central.state != .poweredOn {
+            disconnect()
+            if central.isScanning {
+                central.stopScan()
+            }
         }
     }
     
@@ -165,8 +202,9 @@ extension CBViewModel: CBCentralManagerDelegate {
         }
         self.devices.append(contentsOf: periphDevices)
         
-        // tell the refreshable continuation to end
+        // tell the refreshable continuation to end and stop scanning
         DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) { [weak self] in
+            self?.centralManager?.stopScan()
             self?.scanContinuation?.resume()
         }
     }
@@ -175,6 +213,7 @@ extension CBViewModel: CBCentralManagerDelegate {
                         didConnect peripheral: CBPeripheral) {
         self.connectedPeripheral = peripheral
         peripheral.delegate = self
+        discoverServices()
     }
     
     func centralManager(_ central: CBCentralManager,
@@ -187,7 +226,8 @@ extension CBViewModel: CBCentralManagerDelegate {
                         didDisconnectPeripheral peripheral: CBPeripheral,
                         error: (any Error)?) {
         guard self.connectedPeripheral?.identifier == peripheral.identifier else { return }
-        self.connectedPeripheral = nil
+        
+        disconnect()
     }
 }
 
@@ -197,14 +237,24 @@ extension CBViewModel: CBPeripheralDelegate {
                     didDiscoverServices error: (any Error)?) {
         self.servicesAvailable = true
         
-        // use connectedPeripheral.services to see the values
+        // peripheral responded it has services, get the available characteristics
+        peripheral.services?.forEach { service in
+            peripheral.discoverCharacteristics(nil, for: service)
+        }
     }
     
     func peripheral(_ peripheral: CBPeripheral,
                     didDiscoverCharacteristicsFor service: CBService,
                     error: (any Error)?) {
+        guard let _ = self.connectedPeripheral else { return }
+        guard let characteristics = service.characteristics else { return }
         
-        // use
+        for characteristic in characteristics {
+            let key = characteristic.uuid
+            self.characteristics[key.uuidString] = characteristic
+        }
+        
+        initialReadCharacteristics()
     }
     
 }
