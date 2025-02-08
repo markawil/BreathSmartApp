@@ -43,6 +43,13 @@ class CBViewModel: NSObject, ObservableObject {
     @Published var servicesAvailable: Bool = false
     @Published var isScanning: Bool = false
     
+    var connectedDevice: Device? {
+        guard let connectedPeripheral else { return nil }
+        guard !devices.isEmpty else { return nil }
+        
+        return devices.first { $0.id == connectedPeripheral.identifier }
+    }
+    
     private var centralManager: CBCentralManager!
     private(set) var connectedPeripheral: CBPeripheral? {
         didSet {
@@ -51,7 +58,6 @@ class CBViewModel: NSObject, ObservableObject {
         }
     }
     private(set) var connectingPeripheral: CBPeripheral?
-    
     private var scanContinuation: CheckedContinuation<Void, Never>?
     
     // Keep track of characteristics that were found for the connectedPeripheral

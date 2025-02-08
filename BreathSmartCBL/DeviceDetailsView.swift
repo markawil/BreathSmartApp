@@ -22,26 +22,30 @@ struct DeviceDetailsView: View {
     
     var useMockServices: Bool = false
     
+    @State private var showHM10View: Bool = false
+    
     @State private var selectedService: CBUUID? = nil
     
     var body: some View {
         VStack {
             HStack {
                 Spacer()
-                Text("\(viewModel.connectedPeripheral?.name ?? "Device 1")")
-                    .font(.title2)
-                    .padding()
-                Spacer()
-                if let name = viewModel.connectedPeripheral?.name {
+                if let name = viewModel.connectedDevice?.name {
                     if name.starts(with: "HM") {
                         Button {
-                            
+                            showHM10View.toggle()
                         } label: {
-                            Text("Control")
+                            Text("HM10")
                         }
                     }
+                } else {
+                    Text("\(viewModel.connectedDevice?.name ?? "Device 1")")
+                        .font(.title2)
+                        .padding()
                 }
+                Spacer()
             }
+            
             if useMockServices {
                 List {
                     Section(header: Text("Advertised Services")) {
@@ -60,7 +64,6 @@ struct DeviceDetailsView: View {
                         }
                     }
                 }
-                
             } else if let servicesAvailable = viewModel.connectedPeripheral?.services {
                 List(servicesAvailable, id: \.uuid) { service in
                     VStack {
@@ -70,6 +73,10 @@ struct DeviceDetailsView: View {
                     }
                 }
             }
+        }
+        .navigationDestination(isPresented: $showHM10View) {
+            HM10ConnectView()
+                .environmentObject(viewModel)
         }
     }
 }

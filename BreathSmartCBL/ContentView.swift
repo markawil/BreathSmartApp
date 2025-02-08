@@ -97,7 +97,7 @@ let mockDevices: [Device] = [
     Device(id: UUID(), name: "device 3", advertisementData: [:], rsi: 1),
 ]
 
-let mockViewModel = CBViewModel(with: [],
+let mockViewModel = CBViewModel(with: mockDevices,
                                 state: .mockOnly)
 
 struct ContentView_Previews: PreviewProvider {

@@ -11,6 +11,8 @@ struct HM10ConnectView: View {
     
     @EnvironmentObject var viewModel: CBViewModel
     
+    @Environment(\.presentationMode) private var mode
+    
     var body: some View {
         VStack {
             Text("HM10 Connected...").font(.title)
@@ -37,6 +39,7 @@ struct HM10ConnectView: View {
             Spacer()
             Button("Disconnect") {
                 viewModel.disconnect()
+                mode.wrappedValue.dismiss()
             }
             .padding()
             .background(.blue)
