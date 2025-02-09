@@ -10,6 +10,7 @@ import SwiftUI
 
 struct DeviceDetailsView: View {
     
+    @Environment(\.presentationMode) private var mode
     @EnvironmentObject var viewModel: CBViewModel
     
     let mockServices: [CBUUID] = [CBUUID(string: Constants.UUID.Service.heartRateService),
@@ -69,6 +70,11 @@ struct DeviceDetailsView: View {
                         ForEach(viewModel.characteristics.map { $0.value.uuid }, id: \.uuidString) { characteristic in
                             Text(characteristic.uuidString)
                         }
+                    }
+                }
+                .onAppear {
+                    if !viewModel.isConnected {
+                        mode.wrappedValue.dismiss()
                     }
                 }
             }

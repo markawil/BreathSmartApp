@@ -186,7 +186,7 @@ class CBViewModel: NSObject, ObservableObject {
         guard let characteristic = characteristics[Constants.HM10.Characteristic.data] else { return }
                 
         guard let data = message.data(using: .utf8) else { return }
-        peripheral.writeValue(data, for: characteristic, type: .withResponse)
+        peripheral.writeValue(data, for: characteristic, type: .withoutResponse)
     }
 }
 
@@ -219,7 +219,7 @@ extension CBViewModel: CBCentralManagerDelegate {
             print("Powered on state")
             state = .goodToGo
             Task {
-                await startScan()
+                startScan()
             }
         @unknown default:
             print("default state")
@@ -304,4 +304,9 @@ extension CBViewModel: CBPeripheralDelegate {
         initialReadCharacteristics()
     }
     
+    func peripheral(_ peripheral: CBPeripheral,
+                    didUpdateValueFor characteristic: CBCharacteristic,
+                    error: (any Error)?) {
+        // implement if you want to know when a value was updated.
+    }
 }
