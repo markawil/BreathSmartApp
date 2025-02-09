@@ -7,6 +7,7 @@
 
 import SwiftUI
 
+@MainActor
 struct ContentView: View {
     
     @ObservedObject var viewModel: CBViewModel
@@ -25,9 +26,7 @@ struct ContentView: View {
                         .background(.white)
                 } else if viewModel.devices.isEmpty {
                     Button {
-                        Task {
-                            await viewModel.startScan()
-                        }
+                        viewModel.startScan()
                     } label: {
                         Text("Scan for BLE Devices")
                             .font(.headline)
@@ -65,9 +64,6 @@ struct ContentView: View {
                     }
                     .background(Color(uiColor: UIColor.systemGroupedBackground))
                     .padding([.leading, .trailing], -20)
-                    .refreshable {
-                        await viewModel.startScan()
-                    }
                     .navigationDestination(isPresented: $showDeviceDetails) {
                         DeviceDetailsView()
                             .environmentObject(viewModel)
@@ -85,14 +81,15 @@ struct ContentView: View {
             .toolbarBackground(.visible, for: .navigationBar)
             .toolbarColorScheme(.dark, for: .navigationBar)
             .onAppear() {
+                if viewModel.isConnected {
+                    viewModel.disconnect()
+                }
                 self.viewModel.selectedDevice = nil
                 viewModel.startCB()
             }
             .fullScreenCover(isPresented: $showConnectionPopUp,
                              onDismiss: {
-                if viewModel.isConnected {
-                    self.showDeviceDetails = true
-                }
+                self.showDeviceDetails = viewModel.isConnected
             }, content: {
                 FullScreenConnectingView(deviceName: viewModel.selectedDevice?.name ?? "")
                     .environmentObject(viewModel)

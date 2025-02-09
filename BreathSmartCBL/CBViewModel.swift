@@ -94,7 +94,6 @@ class CBViewModel: NSObject, ObservableObject {
         }
     }
     private(set) var connectingPeripheral: CBPeripheral?
-    private var scanContinuation: CheckedContinuation<Void, Never>?
     
     // Keep track of characteristics that were found for the connectedPeripheral
     @Published var characteristics: [String: CBCharacteristic] = [:]
@@ -112,24 +111,20 @@ class CBViewModel: NSObject, ObservableObject {
         centralManager = CBCentralManager(delegate: self, queue: nil)
     }
     
-    func startScan() async {
+    func startScan() {
         guard state != .mockOnly else { return }
         guard !centralManager.isScanning else { return }
         
         clearDiscoveries()
         
-        await withCheckedContinuation { [weak self] continuation in
-            self?.scanContinuation = continuation
-            let options: [String: Any] = [
-                CBCentralManagerScanOptionAllowDuplicatesKey: false
-            ]
-            self?.centralManager.scanForPeripherals(withServices: nil, options: options)
-        }
+        let options: [String: Any] = [
+            CBCentralManagerScanOptionAllowDuplicatesKey: false
+        ]
+        self.centralManager.scanForPeripherals(withServices: nil, options: options)
         
-        // tell the refreshable continuation to end and stop scanning after 3 seconds
+        // only need to scan for 3 seconds at most
         DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) { [weak self] in
             self?.centralManager?.stopScan()
-            self?.scanContinuation?.resume()
         }
     }
     
@@ -169,10 +164,12 @@ class CBViewModel: NSObject, ObservableObject {
     }
     
     private func clearDiscoveries() {
-        self.discoveredPeripherals.removeAll()
-        self.discoveredServices.removeAll()
-        self.devices.removeAll()
-        self.characteristics.removeAll()
+        DispatchQueue.main.async {
+            self.discoveredPeripherals.removeAll()
+            self.discoveredServices.removeAll()
+            self.devices.removeAll()
+            self.characteristics.removeAll()
+        }
     }
     
     func sendOn() {
@@ -286,6 +283,7 @@ extension CBViewModel: CBPeripheralDelegate {
                     didDiscoverServices error: (any Error)?) {
         self.servicesAvailable = true
         
+        self.discoveredServices.append(contentsOf: peripheral.services ?? [])
         // peripheral responded it has services, get the available characteristics
         peripheral.services?.forEach { service in
             peripheral.discoverCharacteristics(nil, for: service)
