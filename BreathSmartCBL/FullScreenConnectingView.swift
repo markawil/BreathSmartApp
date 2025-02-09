@@ -12,7 +12,7 @@ struct FullScreenConnectingView: View {
     @EnvironmentObject var viewModel: CBViewModel
     @Environment(\.presentationMode) private var mode
     
-    var deviceName: String = "Unknown Device"
+    @State var deviceName: String = "Unknown device"
 
         var body: some View {
             Color.black.opacity(0.5)
@@ -29,6 +29,8 @@ struct FullScreenConnectingView: View {
                             .padding()
                         Spacer()
                         Button {
+                            // will cancel the pending connection
+                            viewModel.disconnect()
                             mode.wrappedValue.dismiss()
                         } label: {
                             Text("Cancel")
@@ -40,11 +42,6 @@ struct FullScreenConnectingView: View {
                     }
                 }
                 .ignoresSafeArea()
-                .onAppear {
-//                    Task {
-//                        try? await Thread.sleep(forTimeInterval: 2)
-//                    }
-                }
         }
 }
 

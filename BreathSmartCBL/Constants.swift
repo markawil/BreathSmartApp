@@ -7,7 +7,35 @@
 
 import Foundation
 
-public enum CBLKeys: String {
+enum CBState {
+    case notAvailable
+    case resetting
+    case poweredOff
+    case goodToGo
+    case mockOnly
+    
+    var errorType: ErrorType? {
+        switch self {
+        case .notAvailable, .poweredOff:
+            return .notAvailable
+        case .mockOnly:
+            return nil
+        default:
+            return nil
+        }
+    }
+}
+
+enum ErrorType: String, Error {
+    case deviceDisconnected = "Device disconnected."
+    case failedToConnect = "Failed to connect to device."
+    case peripheralMissing = "Asked to connect to device that wasn't in the discovered list."
+    case notAvailable = "Bluetooth is not available."
+    case notAuthorized = "Bluetooth is not authorized."
+    case unknown = "Something went wrong."
+}
+
+enum CBLKeys: String {
     
     case advDataManufacturerDataKey = "CBAdvertisementDataManufacturerDataKey"
     case advDataServiceDataKey = "CBAdvertisementDataServiceDataKey"
@@ -33,6 +61,15 @@ struct Constants {
             static let heartRateCharacteristic = "0x2A37"
         }
     }
-
+    
+    struct HM10 {
+        struct Service {
+            static let data = "FFE0"
+        }
+        
+        struct Characteristic {
+            static let data = "FFE1"
+        }
+    }
 }
 

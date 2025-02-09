@@ -23,7 +23,6 @@ struct DeviceDetailsView: View {
     var useMockServices: Bool = false
     
     @State private var showHM10View: Bool = false
-    
     @State private var selectedService: CBUUID? = nil
     
     var body: some View {
@@ -50,26 +49,26 @@ struct DeviceDetailsView: View {
                 List {
                     Section(header: Text("Advertised Services")) {
                         ForEach(mockServices, id: \.uuidString) { service in
-                            Button {
-                                
-                            } label: {
-                                Text(service.uuidString)
-                            }
-                            .tint(.black)
+                            Text(service.uuidString)
                         }
                     }
-                    Section(header: Text("Attributes")) {
+                    Section(header: Text("Characteristics")) {
                         ForEach(mockCharacteristics, id: \.uuidString) { characteristic in
                             Text(characteristic.uuidString)
                         }
                     }
                 }
-            } else if let servicesAvailable = viewModel.connectedPeripheral?.services {
-                List(servicesAvailable, id: \.uuid) { service in
-                    VStack {
-                        Text(service.uuid.uuidString)
-                            .font(.headline)
-                            .padding()
+            } else {
+                List(viewModel.discoveredServices, id: \.uuid) { service in
+                    Section(header: Text("Advertised Services")) {
+                        ForEach(viewModel.discoveredServices.map { $0.uuid }, id: \.uuidString) { service in
+                            Text(service.uuidString)
+                        }
+                    }
+                    Section(header: Text("Characteristics")) {
+                        ForEach(viewModel.characteristics.map { $0.value.uuid }, id: \.uuidString) { characteristic in
+                            Text(characteristic.uuidString)
+                        }
                     }
                 }
             }

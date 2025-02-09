@@ -13,8 +13,7 @@ struct ContentView: View {
     
     @State private var showBLENotAvailableAlert = false
     
-    @State private var selectedDevice: Device?
-    @State private var showConnectedScreen = false
+    @State private var showDeviceDetails = false
     @State private var showConnectionPopUp = false
     
     var body: some View {
@@ -38,9 +37,9 @@ struct ContentView: View {
                     List(viewModel.devices, id: \.id) {
                         device in
                         Button {
-                            self.selectedDevice = device
+                            self.viewModel.selectedDevice = device
                             self.viewModel.connect(to: device)
-                            self.showConnectionPopUp = true
+                            self.showConnectionPopUp.toggle()
                         } label: {
                             VStack {
                                 HStack {
@@ -48,7 +47,7 @@ struct ContentView: View {
                                         .font(.title2)
                                         .padding(10)
                                     Spacer()
-                                    Image("wifi_strength_4")
+                                    Image(device.rssiImageName)
                                         .renderingMode(.template)
                                         .foregroundColor(.blue)
                                         .aspectRatio(contentMode: .fit)
@@ -69,9 +68,14 @@ struct ContentView: View {
                     .refreshable {
                         await viewModel.startScan()
                     }
-                    .navigationDestination(isPresented: $viewModel.isConnected) {
+                    .navigationDestination(isPresented: $showDeviceDetails) {
                         DeviceDetailsView()
                             .environmentObject(viewModel)
+                    }
+                    .alert("Error", isPresented: $viewModel.errorThrown) {
+                        Button("OK", role: .cancel) { }
+                    } message: {
+                        Text(viewModel.lastError?.rawValue ?? "An error occurred.")
                     }
                 }
             }
@@ -81,28 +85,37 @@ struct ContentView: View {
             .toolbarBackground(.visible, for: .navigationBar)
             .toolbarColorScheme(.dark, for: .navigationBar)
             .onAppear() {
-                self.showConnectionPopUp = false
+                self.viewModel.selectedDevice = nil
                 viewModel.startCB()
             }
-            .fullScreenCover(isPresented: $showConnectionPopUp) {
-                FullScreenConnectingView(deviceName: selectedDevice?.name ?? "??")
+            .fullScreenCover(isPresented: $showConnectionPopUp,
+                             onDismiss: {
+                if viewModel.isConnected {
+                    self.showDeviceDetails = true
+                }
+            }, content: {
+                FullScreenConnectingView(deviceName: viewModel.selectedDevice?.name ?? "")
+                    .environmentObject(viewModel)
+            })
+            .onReceive(viewModel.$isConnected
+                .compactMap({$0})) { isConnected in
+                    if isConnected {
+                        self.showConnectionPopUp = false // if it was being displayed
+                    }
             }
         }
     }
 }
 
 let mockDevices: [Device] = [
-    Device(id: UUID(), name: "device 1", advertisementData: [:], rsi: 4),
-    Device(id: UUID(), name: "device 2", advertisementData: [:], rsi: 2),
-    Device(id: UUID(), name: "device 3", advertisementData: [:], rsi: 1),
+    Device(id: UUID(), name: "device 1", advertisementData: [:], rssi: -30),
+    Device(id: UUID(), name: "device 2", advertisementData: [:], rssi: -50),
+    Device(id: UUID(), name: "device 3", advertisementData: [:], rssi: -70),
 ]
 
 let mockViewModel = CBViewModel(with: mockDevices,
                                 state: .mockOnly)
 
-struct ContentView_Previews: PreviewProvider {
-    
-    static var previews: some View {
-        ContentView(viewModel: mockViewModel)
-    }
+#Preview {
+    ContentView(viewModel: mockViewModel)
 }
