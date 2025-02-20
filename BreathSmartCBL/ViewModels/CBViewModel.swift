@@ -20,6 +20,7 @@ class CBViewModel: NSObject, ObservableObject {
     @Published var state: CBState = .notAvailable
     
     private var cancellables: Set<AnyCancellable> = []
+    private var hasInitialized = false
     
     var lastError: ErrorType? {
         didSet {
@@ -45,6 +46,11 @@ class CBViewModel: NSObject, ObservableObject {
         self.bleManager = bleManager
     }
     
+    deinit {
+        cancellables.forEach { $0.cancel() }
+        cancellables = []
+    }
+    
     func startScan() {
         self.devices.removeAll()
         bleManager?.clearDiscoveries()
@@ -66,16 +72,22 @@ class CBViewModel: NSObject, ObservableObject {
     }
     
     func setupAndStart() {
-
         guard let bleManager = bleManager else { return }
+        guard !hasInitialized else {
+            return
+        }
+        
+        hasInitialized = true
         
         bleManager.lastErrorSubject
+            .receive(on: DispatchQueue.main)
             .sink { value in
                 self.lastError = value
             }
             .store(in: &cancellables)
         
         bleManager.discoveredPeripheralSubject
+            .receive(on: DispatchQueue.main)
             .map { (peripheral, advertisementData, rssi) in
                 return Device(id: peripheral.identifier,
                                     name: peripheral.name ?? "Unknown",
@@ -90,6 +102,7 @@ class CBViewModel: NSObject, ObservableObject {
             .store(in: &cancellables)
         
         bleManager.connectionStateSubject
+            .receive(on: DispatchQueue.main)
             .sink { [weak self] value in
                 guard let self = self else { return }
                 self.isConnected = value
@@ -97,6 +110,7 @@ class CBViewModel: NSObject, ObservableObject {
             .store(in: &cancellables)
         
         bleManager.cbStateSubject
+            .receive(on: DispatchQueue.main)
             .sink { state in
                 self.state = state
             }

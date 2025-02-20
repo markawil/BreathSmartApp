@@ -11,7 +11,7 @@ import SwiftUI
 struct BreathSmartCBLApp: App {
     var body: some Scene {
         WindowGroup {
-            BLEDevicesView(viewModel: CBViewModel())
+            BLEDevicesView(viewModel: CBViewModel(bleManager: BLEManager()))
         }
     }
 }

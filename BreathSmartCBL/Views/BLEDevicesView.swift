@@ -13,7 +13,6 @@ struct BLEDevicesView: View {
     @ObservedObject var viewModel: CBViewModel
     
     @State private var showBLENotAvailableAlert = false
-    
     @State private var showDeviceDetails = false
     @State private var showConnectionPopUp = false
     
@@ -81,7 +80,7 @@ struct BLEDevicesView: View {
             .toolbarBackground(.visible, for: .navigationBar)
             .toolbarColorScheme(.dark, for: .navigationBar)
             .onAppear() {
-                if viewModel.bleManager?.isConnected ?? false {
+                if viewModel.isConnected {
                     viewModel.bleManager?.disconnect()
                 }
                 self.viewModel.selectedDevice = nil
@@ -106,8 +105,8 @@ struct BLEDevicesView: View {
 
 let mockDevices: [Device] = [
     Device(id: UUID(), name: "device 1", advertisementData: [:], rssi: -30),
-    Device(id: UUID(), name: "device 2", advertisementData: [:], rssi: -50),
-    Device(id: UUID(), name: "device 3", advertisementData: [:], rssi: -70),
+    Device(id: UUID(), name: "device 2", advertisementData: [:], rssi: -60),
+    Device(id: UUID(), name: "device 3", advertisementData: [:], rssi: -80),
 ]
 
 let mockViewModel = CBViewModel(with: mockDevices,
