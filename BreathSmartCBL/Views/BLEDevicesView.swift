@@ -8,7 +8,7 @@
 import SwiftUI
 
 @MainActor
-struct ContentView: View {
+struct BLEDevicesView: View {
     
     @ObservedObject var viewModel: CBViewModel
     
@@ -37,7 +37,7 @@ struct ContentView: View {
                         device in
                         Button {
                             self.viewModel.selectedDevice = device
-                            self.viewModel.connect(to: device)
+                            self.viewModel.connect()
                             self.showConnectionPopUp.toggle()
                         } label: {
                             VStack {
@@ -81,11 +81,11 @@ struct ContentView: View {
             .toolbarBackground(.visible, for: .navigationBar)
             .toolbarColorScheme(.dark, for: .navigationBar)
             .onAppear() {
-                if viewModel.isConnected {
-                    viewModel.disconnect()
+                if viewModel.bleManager?.isConnected ?? false {
+                    viewModel.bleManager?.disconnect()
                 }
                 self.viewModel.selectedDevice = nil
-                viewModel.startCB()
+                viewModel.setupAndStart()
             }
             .fullScreenCover(isPresented: $showConnectionPopUp,
                              onDismiss: {
@@ -111,8 +111,8 @@ let mockDevices: [Device] = [
 ]
 
 let mockViewModel = CBViewModel(with: mockDevices,
-                                state: .mockOnly)
+                                bleManager: BLEManager(state: .mockOnly))
 
 #Preview {
-    ContentView(viewModel: mockViewModel)
+    BLEDevicesView(viewModel: mockViewModel)
 }

@@ -30,7 +30,7 @@ struct FullScreenConnectingView: View {
                         Spacer()
                         Button {
                             // will cancel the pending connection
-                            viewModel.disconnect()
+                            viewModel.bleManager?.disconnect()
                             mode.wrappedValue.dismiss()
                         } label: {
                             Text("Cancel")

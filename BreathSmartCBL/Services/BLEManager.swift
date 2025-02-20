@@ -1,121 +1,70 @@
 //
+//  BLEManager.swift
+//  BreathSmartCBL
 //
-//  Created by MarkWilkinson on 12/6/24.
+//  Created by Mark Wilkinson on 2/17/25.
 //
 
-import Foundation
+import Combine
 import CoreBluetooth
+import Foundation
 
-struct Device: Identifiable, Hashable {
+protocol BLEProvider {
+    var connectionStateSubject: CurrentValueSubject<Bool, Never> { get }
+    var discoveredPeripheralSubject: PassthroughSubject<(CBPeripheral, [String : Any], NSNumber), Never> { get }
+    var cbStateSubject: CurrentValueSubject<CBState, Never> { get }
+    var lastErrorSubject: CurrentValueSubject<ErrorType?, Never> { get }
     
-    let id: UUID
-    let name: String
-    let advertisementData: [String : Any]
-    let rssi: Int
-    let description: String = ""
+    var discoveredServices: [CBService] { get }
+    var characteristics: [String: CBCharacteristic] { get }
+    var isConnected: Bool { get }
+    var connectedPeripheral: CBPeripheral? { get }
     
-    static func == (lhs: Device, rhs: Device) -> Bool {
-        lhs.id == rhs.id
-    }
-    
-    func hash(into hasher: inout Hasher) {
-        hasher.combine(self)
-    }
-    
-    var rssiLevel: Int {
-        if rssi < 30 && rssi >= -30 {
-            return 4
-        }
-        else if rssi < -30 && rssi >= -50 {
-            return 3
-        }
-        else if rssi < -50 && rssi >= -70 {
-            return 2
-        }
-        else if rssi < -70 && rssi > -100 {
-            return 1
-        }
-        else {
-            return 0
-        }
-    }
-    
-    var rssiImageName: String {
-        switch rssiLevel {
-        case 1:
-            return "wifi_strength_1"
-        case 2:
-            return "wifi_strength_2"
-        case 3:
-            return "wifi_strength_3"
-        case 4:
-            return "wifi_strength_4"
-        default:
-            return "wifi_strength_0"
-        }
-    }
+    func startCB()
+    func startScan()
+    func connect(to: Device)
+    func disconnect()
+    func send(message: String)
+    func clearDiscoveries()
 }
 
-class CBViewModel: NSObject, ObservableObject {
+class BLEManager: NSObject, BLEProvider {
     
-    // should just be devices we want to connect to
-    @Published var devices: [Device] = []
+    private(set) var connectionStateSubject = CurrentValueSubject<Bool, Never>(false)
+    private(set) var discoveredPeripheralSubject = PassthroughSubject<(CBPeripheral, [String : Any], NSNumber), Never>()
+    private(set) var cbStateSubject = CurrentValueSubject<CBState, Never>(.notAvailable)
+    private(set) var lastErrorSubject = CurrentValueSubject<ErrorType?, Never>(nil)
     
-    // temp to show all devices
-    @Published var discoveredPeripherals = [CBPeripheral]()
-    @Published var discoveredServices: [CBService] = []
-    @Published var state: CBState = .notAvailable
-    @Published var isConnected: Bool = false
-    @Published var servicesAvailable: Bool = false
-    @Published var isScanning: Bool = false
-    @Published var errorThrown: Bool = false
-    @Published var selectedDevice: Device? // only used by the ContentView
-    
-    var lastError: ErrorType? {
-        didSet {
-            if lastError != nil {
-                errorThrown = true
-            }
-        }
+    var isConnected: Bool {
+        connectionStateSubject.value
     }
     
-    var connectedDevice: Device? {
-        guard let connectedPeripheral else { return nil }
-        guard !devices.isEmpty else { return nil }
-        
-        return devices.first { $0.id == connectedPeripheral.identifier }
-    }
-    
+    private var isScanning: Bool = false
     private var centralManager: CBCentralManager!
     private(set) var connectedPeripheral: CBPeripheral? {
         didSet {
-            isConnected = connectedPeripheral != nil
-            connectingPeripheral = nil
+            connectionStateSubject.send(connectedPeripheral != nil)
         }
     }
-    private(set) var connectingPeripheral: CBPeripheral?
     
-    // Keep track of characteristics that were found for the connectedPeripheral
-    @Published var characteristics: [String: CBCharacteristic] = [:]
+    private var discoveredPeripherals: [CBPeripheral] = []
+    // Keep track of services and characteristics that were found for the connectedPeripheral
+    private(set) var discoveredServices: [CBService] = []
+    private(set) var characteristics: [String: CBCharacteristic] = [:]
     
-    // needed to show mocked preview
-    init(with devices: [Device] = [],
-         state: CBState = .notAvailable) {
-        self.devices = devices
-        self.state = state
+    init(state: CBState = .notAvailable) {
+        self.cbStateSubject.send(state)
     }
     
     func startCB() {
-        guard state != .mockOnly else { return }
+        guard cbStateSubject.value != .mockOnly else { return }
         
         centralManager = CBCentralManager(delegate: self, queue: nil)
     }
     
     func startScan() {
-        guard state != .mockOnly else { return }
+        guard cbStateSubject.value != .mockOnly else { return }
         guard !centralManager.isScanning else { return }
-        
-        clearDiscoveries()
         
         let options: [String: Any] = [
             CBCentralManagerScanOptionAllowDuplicatesKey: false
@@ -128,27 +77,31 @@ class CBViewModel: NSObject, ObservableObject {
         }
     }
     
-    func connect(to device: Device) {
-        guard state != .mockOnly else { return }
-        guard let peripheral = discoveredPeripherals.first(where: { $0.identifier == device.id }) else {
-            // show error message that periph wasn't in the discovered list
-            self.lastError = .peripheralMissing
-            return
-        }
+    func send(message: String) {
+        guard let peripheral = connectedPeripheral else { return }
+        guard let name = peripheral.name, name.starts(with: "HM") else { return } // only dealing with the HM10 right now.
+        guard let characteristic = characteristics[Constants.HM10.Characteristic.data] else { return }
+                
+        guard let data = message.data(using: .utf8) else { return }
+        peripheral.writeValue(data, for: characteristic, type: .withoutResponse)
+    }
         
-        self.connectingPeripheral = peripheral
+    func connect(to device: Device) {
+        guard cbStateSubject.value != .mockOnly else { return }
+        guard let peripheral = discoveredPeripherals.first(where: { $0.identifier == device.id }) else { return }
+        
         centralManager.connect(peripheral, options: nil)
     }
     
     func disconnect() {
-        guard state != .mockOnly else { return }
+        guard cbStateSubject.value != .mockOnly else { return }
         guard let peripheral = self.connectedPeripheral else {
-            clearDiscoveries() // go ahead and clear if periph was already nil
+            clearConnectedPeripheralDiscoveries() // go ahead and clear if periph was already nil
             return
         }
        
         centralManager.cancelPeripheralConnection(peripheral)
-        clearDiscoveries()
+        clearConnectedPeripheralDiscoveries()
         self.connectedPeripheral = nil
     }
     
@@ -163,67 +116,55 @@ class CBViewModel: NSObject, ObservableObject {
         // read specific characteristics here if needed.
     }
     
-    private func clearDiscoveries() {
+    func clearDiscoveries() {
         DispatchQueue.main.async {
             self.discoveredPeripherals.removeAll()
-            self.discoveredServices.removeAll()
-            self.devices.removeAll()
-            self.characteristics.removeAll()
+            self.clearConnectedPeripheralDiscoveries()
         }
     }
     
-    func sendOn() {
-        send(message: "YES")
-    }
-    
-    func sendOff() {
-        send(message: "NO")
-    }
-    
-    private func send(message: String) {
-        guard let peripheral = connectedPeripheral else { return }
-        guard let name = peripheral.name, name.starts(with: "HM") else { return } // only dealing with the HM10 right now.
-        guard let characteristic = characteristics[Constants.HM10.Characteristic.data] else { return }
-                
-        guard let data = message.data(using: .utf8) else { return }
-        peripheral.writeValue(data, for: characteristic, type: .withoutResponse)
+    func clearConnectedPeripheralDiscoveries() {
+        DispatchQueue.main.async {
+            self.discoveredServices.removeAll()
+            self.characteristics.removeAll()
+        }
     }
 }
 
-extension CBViewModel: CBCentralManagerDelegate {
+extension BLEManager: CBCentralManagerDelegate {
     
     func centralManagerDidUpdateState(_ central: CBCentralManager) {
         switch central.state {
         case .unknown:
             //  The state of the manager and the app’s connection to the Bluetooth service is unknown.
             print("Unknown state")
-            state = .notAvailable
+            cbStateSubject.send(.notAvailable)
         case .resetting:
             // The connection with the Bluetooth service was interrupted.
             print("Resetting state")
-            state = .resetting
+            cbStateSubject.send(.resetting)
         case .unsupported:
             // The iOS device does not support Bluetooth.
             print("Unsupported state")
-            state = .notAvailable
+            cbStateSubject.send(.notAvailable)
         case .unauthorized:
             // The user has refused the app permission to use Bluetooth. The user must re-enable it from the app’s Settings menu.
             print("Unauthorized state")
-            state = .notAvailable
+            cbStateSubject.send(.notAvailable)
         case .poweredOff:
             // The user has toggled Bluetooth off and will need to turn it back on from Settings or the Control Center.
             print("Powered off state")
-            state = .poweredOff
+            cbStateSubject.send(.poweredOff)
         case .poweredOn:
             // Bluetooth is enabled, authorized, and ready for app use.
             print("Powered on state")
-            state = .goodToGo
+            cbStateSubject.send(.goodToGo)
             Task {
                 startScan()
             }
         @unknown default:
             print("default state")
-            state = .notAvailable
+            cbStateSubject.send(.notAvailable)
         }
         
         // per Kirill Sidorov's guide/project, you should disconnect if currently connected and
@@ -235,7 +176,7 @@ extension CBViewModel: CBCentralManagerDelegate {
             }
             
             // now show an alert that anything other than poweredOn was found
-            self.lastError = state.errorType
+            self.lastErrorSubject.send(cbStateSubject.value.errorType)
         }
     }
     
@@ -244,15 +185,11 @@ extension CBViewModel: CBCentralManagerDelegate {
                         advertisementData: [String : Any],
                         rssi RSSI: NSNumber) {
         guard central == self.centralManager else { return }
-        guard !discoveredPeripherals.contains(where: { $0.identifier == peripheral.identifier }) else { return }
+        guard !discoveredPeripherals.contains(where: { $0.identifier == peripheral.identifier }) == false else { return }
         
         // it's new add it
         self.discoveredPeripherals.append(peripheral)
-        let device = Device(id: peripheral.identifier,
-                            name: peripheral.name ?? "Unknown",
-                            advertisementData: advertisementData,
-                            rssi: RSSI.intValue)
-        self.devices.append(device)
+        self.discoveredPeripheralSubject.send((peripheral, advertisementData, RSSI))
     }
     
     func centralManager(_ central: CBCentralManager,
@@ -265,7 +202,7 @@ extension CBViewModel: CBCentralManagerDelegate {
     func centralManager(_ central: CBCentralManager,
                         didFailToConnect peripheral: CBPeripheral,
                         error: Error?) {
-        self.lastError = .failedToConnect
+        self.lastErrorSubject.send(.failedToConnect)
     }
     
     func centralManager(_ central: CBCentralManager,
@@ -277,12 +214,12 @@ extension CBViewModel: CBCentralManagerDelegate {
     }
 }
 
-extension CBViewModel: CBPeripheralDelegate {
+extension BLEManager: CBPeripheralDelegate {
     
     func peripheral(_ peripheral: CBPeripheral,
                     didDiscoverServices error: (any Error)?) {
-        self.servicesAvailable = true
         
+        self.discoveredServices.removeAll()
         self.discoveredServices.append(contentsOf: peripheral.services ?? [])
         // peripheral responded it has services, get the available characteristics
         peripheral.services?.forEach { service in

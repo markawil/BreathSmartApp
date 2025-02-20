@@ -38,7 +38,7 @@ struct HM10ConnectView: View {
             }
             Spacer()
             Button("Disconnect") {
-                viewModel.disconnect()
+                viewModel.bleManager?.disconnect()
                 mode.wrappedValue.dismiss()
             }
             .padding()

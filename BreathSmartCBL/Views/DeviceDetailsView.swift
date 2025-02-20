@@ -60,14 +60,14 @@ struct DeviceDetailsView: View {
                     }
                 }
             } else {
-                List(viewModel.discoveredServices, id: \.uuid) { service in
+                List {
                     Section(header: Text("Advertised Services")) {
-                        ForEach(viewModel.discoveredServices.map { $0.uuid }, id: \.uuidString) { service in
+                        ForEach(viewModel.bleManager?.discoveredServices.map { $0.uuid } ?? [], id: \.uuidString) { service in
                             Text(service.uuidString)
                         }
                     }
                     Section(header: Text("Characteristics")) {
-                        ForEach(viewModel.characteristics.map { $0.value.uuid }, id: \.uuidString) { characteristic in
+                        ForEach(viewModel.bleManager?.characteristics.map { $0.value.uuid } ?? [], id: \.uuidString) { characteristic in
                             Text(characteristic.uuidString)
                         }
                     }
