@@ -204,6 +204,8 @@ extension BLEManager: CBCentralManagerDelegate {
                         rssi RSSI: NSNumber) {
         guard central == self.centralManager else { return }
         guard !discoveredPeripherals.contains(where: { $0.identifier == peripheral.identifier }) else { return }
+        // ignore peripherals that aren't cool enough to reveal their names
+        guard let name = peripheral.name else { return }
         
         // it's new add it
         self.discoveredPeripherals.append(peripheral)
