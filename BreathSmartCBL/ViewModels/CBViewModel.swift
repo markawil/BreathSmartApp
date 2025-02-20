@@ -11,9 +11,6 @@ class CBViewModel: NSObject, ObservableObject {
     
     // should just be devices we want to connect to
     @Published var devices: [Device] = []
-    
-    // temp to show all devices
-    
     @Published var selectedDevice: Device? // only used by the ContentView
     @Published var errorThrown: Bool = false
     @Published var isConnected: Bool = false
@@ -58,9 +55,9 @@ class CBViewModel: NSObject, ObservableObject {
     }
     
     func connect() {
-        guard let connectedDevice = connectedDevice else { return }
+        guard let selectedDevice = selectedDevice else { return }
         
-        bleManager?.connect(to: connectedDevice)
+        bleManager?.connect(to: selectedDevice)
     }
     
     func sendOn() {
@@ -79,14 +76,12 @@ class CBViewModel: NSObject, ObservableObject {
         
         hasInitialized = true
         
-        bleManager.lastErrorSubject
+        bleManager.lastErrorPublisher
             .receive(on: DispatchQueue.main)
-            .sink { value in
-                self.lastError = value
-            }
+            .assign(to: \.lastError, on: self)
             .store(in: &cancellables)
         
-        bleManager.discoveredPeripheralSubject
+        bleManager.discoveredPeripheralPublisher
             .receive(on: DispatchQueue.main)
             .map { (peripheral, advertisementData, rssi) in
                 return Device(id: peripheral.identifier,
@@ -101,19 +96,14 @@ class CBViewModel: NSObject, ObservableObject {
             }
             .store(in: &cancellables)
         
-        bleManager.connectionStateSubject
+        bleManager.connectionStatePublisher
             .receive(on: DispatchQueue.main)
-            .sink { [weak self] value in
-                guard let self = self else { return }
-                self.isConnected = value
-            }
+            .assign(to: \.isConnected, on: self)
             .store(in: &cancellables)
         
-        bleManager.cbStateSubject
+        bleManager.cbStatePublisher
             .receive(on: DispatchQueue.main)
-            .sink { state in
-                self.state = state
-            }
+            .assign(to: \.state, on: self)
             .store(in: &cancellables)
         
         bleManager.startCB()

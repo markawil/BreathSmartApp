@@ -24,13 +24,13 @@ struct Device: Identifiable, Hashable {
     }
     
     var rssiLevel: Int {
-        if rssi < 30 && rssi >= -50 {
+        if rssi < 30 && rssi >= -30 {
             return 4
         }
-        else if rssi < -50 && rssi >= -70 {
+        else if rssi < -30 && rssi >= -60 {
             return 3
         }
-        else if rssi < -70 && rssi >= -80 {
+        else if rssi < -60 && rssi >= -80 {
             return 2
         }
         else if rssi < -80 && rssi > -100 {

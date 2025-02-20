@@ -10,10 +10,10 @@ import CoreBluetooth
 import Foundation
 
 protocol BLEProvider {
-    var connectionStateSubject: CurrentValueSubject<Bool, Never> { get }
-    var discoveredPeripheralSubject: PassthroughSubject<(CBPeripheral, [String : Any], NSNumber), Never> { get }
-    var cbStateSubject: CurrentValueSubject<CBState, Never> { get }
-    var lastErrorSubject: CurrentValueSubject<ErrorType?, Never> { get }
+    var connectionStatePublisher: AnyPublisher<Bool, Never> { get }
+    var discoveredPeripheralPublisher: AnyPublisher<(CBPeripheral, [String : Any], NSNumber), Never> { get }
+    var cbStatePublisher: AnyPublisher<CBState, Never> { get }
+    var lastErrorPublisher: AnyPublisher<ErrorType?, Never> { get }
     
     var discoveredServices: [CBService] { get }
     var characteristics: [String: CBCharacteristic] { get }
@@ -30,10 +30,28 @@ protocol BLEProvider {
 
 class BLEManager: NSObject, BLEProvider {
     
+    // private publisher subjects
     private(set) var connectionStateSubject = CurrentValueSubject<Bool, Never>(false)
     private(set) var discoveredPeripheralSubject = PassthroughSubject<(CBPeripheral, [String : Any], NSNumber), Never>()
     private(set) var cbStateSubject = CurrentValueSubject<CBState, Never>(.notAvailable)
     private(set) var lastErrorSubject = CurrentValueSubject<ErrorType?, Never>(nil)
+    
+    // public publishers hiding the private subjects
+    var connectionStatePublisher: AnyPublisher<Bool, Never> {
+        connectionStateSubject.eraseToAnyPublisher()
+    }
+    
+    var discoveredPeripheralPublisher: AnyPublisher<(CBPeripheral, [String : Any], NSNumber), Never> {
+        discoveredPeripheralSubject.eraseToAnyPublisher()
+    }
+    
+    var cbStatePublisher: AnyPublisher<CBState, Never> {
+        cbStateSubject.eraseToAnyPublisher()
+    }
+    
+    var lastErrorPublisher: AnyPublisher<ErrorType?, Never> {
+        lastErrorSubject.eraseToAnyPublisher()
+    }
     
     var isConnected: Bool {
         connectionStateSubject.value
@@ -185,7 +203,7 @@ extension BLEManager: CBCentralManagerDelegate {
                         advertisementData: [String : Any],
                         rssi RSSI: NSNumber) {
         guard central == self.centralManager else { return }
-        guard !discoveredPeripherals.contains(where: { $0.identifier == peripheral.identifier }) == false else { return }
+        guard !discoveredPeripherals.contains(where: { $0.identifier == peripheral.identifier }) else { return }
         
         // it's new add it
         self.discoveredPeripherals.append(peripheral)
