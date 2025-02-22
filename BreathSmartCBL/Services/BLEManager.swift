@@ -216,7 +216,12 @@ extension BLEManager: CBCentralManagerDelegate {
                         didConnect peripheral: CBPeripheral) {
         self.connectedPeripheral = peripheral
         peripheral.delegate = self
+        
         discoverServices()
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { [weak self] in
+            self?.send(message: "$$iPhone15!!")
+        }
     }
     
     func centralManager(_ central: CBCentralManager,

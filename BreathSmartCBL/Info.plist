@@ -6,6 +6,8 @@
 	<string>To use Bluetooth for communications.</string>
 	<key>Bluetooth Peripheral Usage Description</key>
 	<string>To use Bluetooth to communicate with devices.</string>
+	<key>UIUserInterfaceStyle</key>
+	<string>Light</string>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>App communicates using Core Bluetooth</string>
