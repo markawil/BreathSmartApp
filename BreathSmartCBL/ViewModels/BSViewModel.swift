@@ -1,19 +1,18 @@
 //
+//  BSViewModel.swift
+//  BreathSmartCBL
 //
-//  Created by MarkWilkinson on 12/6/24.
+//  Created by Mark Wilkinson on 2/21/25.
 //
 
-import Foundation
-import CoreBluetooth
 import Combine
+import Foundation
 
-class CBViewModel: ObservableObject {
+class BSViewModel: ObservableObject {
     
-    // should just be devices we want to connect to
-    @Published var devices: [Device] = []
-    @Published var selectedDevice: Device? // only used by the ContentView
-    @Published var errorThrown: Bool = false
+    @Published var isScanning: Bool = false
     @Published var isConnected: Bool = false
+    @Published var errorThrown: Bool = false
     @Published var state: CBState = .notAvailable
     
     private var cancellables: Set<AnyCancellable> = []
@@ -27,19 +26,12 @@ class CBViewModel: ObservableObject {
         }
     }
     
-    var connectedDevice: Device? {
-        guard let peripheral = bleManager?.connectedPeripheral else { return nil }
-        guard !devices.isEmpty else { return nil }
-        
-        return devices.first { $0.id == peripheral.identifier }
-    }
+    var connectedDevice: Device?
     
     private(set) var bleManager: BLEProvider?
     
     // devices needed to show mocked preview
-    init(with devices: [Device] = [],
-         bleManager: BLEManager? = nil) {
-        self.devices = devices
+    init(bleManager: BLEManager? = nil) {
         self.bleManager = bleManager
     }
     
@@ -48,24 +40,9 @@ class CBViewModel: ObservableObject {
         cancellables = []
     }
     
-    func startScan() {
-        self.devices.removeAll()
+    func scanAndConnectToHM10() {
         bleManager?.clearDiscoveries()
         bleManager?.startScan()
-    }
-    
-    func connect() {
-        guard let selectedDevice = selectedDevice else { return }
-        
-        bleManager?.connect(to: selectedDevice.id)
-    }
-    
-    func sendOn() {
-        bleManager?.send(message: "YES")
-    }
-    
-    func sendOff() {
-        bleManager?.send(message: "NO")
     }
     
     func setupAndStart() {
@@ -91,8 +68,10 @@ class CBViewModel: ObservableObject {
             }
             .sink { [weak self] device in
                 guard let self = self else { return }
-                guard !self.devices.contains(where: { $0.id == device.id }) else { return }
-                self.devices.append(device)
+                
+                if device.name.hasPrefix("HMSoft") {
+                    
+                }
             }
             .store(in: &cancellables)
         
@@ -109,4 +88,3 @@ class CBViewModel: ObservableObject {
         bleManager.startCB()
     }
 }
-

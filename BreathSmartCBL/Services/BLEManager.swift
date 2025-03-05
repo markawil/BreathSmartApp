@@ -10,11 +10,14 @@ import CoreBluetooth
 import Foundation
 
 protocol BLEProvider {
+    
+    /* Combine Publishers for BLE states */
     var connectionStatePublisher: AnyPublisher<Bool, Never> { get }
     var discoveredPeripheralPublisher: AnyPublisher<(CBPeripheral, [String : Any], NSNumber), Never> { get }
     var cbStatePublisher: AnyPublisher<CBState, Never> { get }
     var lastErrorPublisher: AnyPublisher<ErrorType?, Never> { get }
     
+    /* Properties for the connected device */
     var discoveredServices: [CBService] { get }
     var characteristics: [String: CBCharacteristic] { get }
     var isConnected: Bool { get }
@@ -22,7 +25,7 @@ protocol BLEProvider {
     
     func startCB()
     func startScan()
-    func connect(to: Device)
+    func connect(to: UUID)
     func disconnect()
     func send(message: String)
     func clearDiscoveries()
@@ -104,9 +107,9 @@ class BLEManager: NSObject, BLEProvider {
         peripheral.writeValue(data, for: characteristic, type: .withoutResponse)
     }
         
-    func connect(to device: Device) {
+    func connect(to uuid: UUID) {
         guard cbStateSubject.value != .mockOnly else { return }
-        guard let peripheral = discoveredPeripherals.first(where: { $0.identifier == device.id }) else { return }
+        guard let peripheral = discoveredPeripherals.first(where: { $0.identifier == uuid }) else { return }
         
         centralManager.connect(peripheral, options: nil)
     }
