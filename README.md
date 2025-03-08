@@ -4,4 +4,6 @@ https://github.com/markawil/BreathSmartBLE
 
 The app uses CoreBluetooth with a Combine interface to connect to any BLE device, but functions off of connecting to the HM10 module and reading sensor data over a characteristic.
 
-![Landing screen](https://i.imgur.com/oyHC2UYl.png)
+![Landing screen](https://i.imgur.com/DfTwHHcl.png)
+
+
