@@ -10,7 +10,7 @@ import SwiftUI
 @MainActor
 struct BLEDevicesView: View {
     
-    @ObservedObject var viewModel: CBViewModel
+    @EnvironmentObject var viewModel: CBViewModel
     
     @State private var showBLENotAvailableAlert = false
     @State private var showDeviceDetails = false
@@ -25,7 +25,7 @@ struct BLEDevicesView: View {
                         .background(.white)
                 } else if viewModel.devices.isEmpty {
                     Button {
-                        viewModel.startScan()
+                        viewModel.startScan(removeDiscoveredDevices: true)
                     } label: {
                         Text("Scan for BLE Devices")
                             .font(.headline)
@@ -75,16 +75,18 @@ struct BLEDevicesView: View {
                 }
             }
             .background(Color(uiColor: UIColor.systemGroupedBackground))
-            .navigationTitle("CoreBluetooth")
+            .navigationTitle("BLE Devices")
+            .navigationBarTitleDisplayMode(.inline)
             .toolbarBackground(Color(.blue), for: .navigationBar)
-            .toolbarBackground(.visible, for: .navigationBar)
             .toolbarColorScheme(.dark, for: .navigationBar)
+            .toolbarBackground(.visible, for: .navigationBar)
             .onAppear() {
                 if viewModel.isConnected {
                     viewModel.bleManager?.disconnect()
                 }
                 self.viewModel.selectedDevice = nil
                 viewModel.setupAndStart()
+                viewModel.startScan(removeDiscoveredDevices: false)
             }
             .fullScreenCover(isPresented: $showConnectionPopUp,
                              onDismiss: {
@@ -109,9 +111,10 @@ let mockDevices: [Device] = [
     Device(id: UUID(), name: "device 3", advertisementData: [:], rssi: -80),
 ]
 
-let mockViewModel = CBViewModel(with: mockDevices,
-                                bleManager: BLEManager(state: .mockOnly))
+let mockCBViewModel = CBViewModel(with: mockDevices,
+                                  bleManager: BLEManager(state: .mockOnly))
 
 #Preview {
-    BLEDevicesView(viewModel: mockViewModel)
+    BLEDevicesView()
+        .environmentObject(mockCBViewModel)
 }

@@ -9,9 +9,19 @@ import SwiftUI
 
 @main
 struct BreathSmartCBLApp: App {
+    
+    let bleManager = BLEManager()
+    
+//    init() {
+//        UINavigationBar.appearance().titleTextAttributes = [.foregroundColor: UIColor.white]
+//        UINavigationBar.appearance().largeTitleTextAttributes = [.foregroundColor: UIColor.white]
+//    }
+    
     var body: some Scene {
         WindowGroup {
-            BLEDevicesView(viewModel: CBViewModel(bleManager: BLEManager()))
+            BreathSmartHomeView()
+                .environmentObject(BrSmViewModel(bleManager: bleManager))
+                .environmentObject(CBViewModel(bleManager: bleManager))
         }
     }
 }

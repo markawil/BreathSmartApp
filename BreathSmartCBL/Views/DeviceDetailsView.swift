@@ -88,5 +88,5 @@ struct DeviceDetailsView: View {
 
 #Preview {
     DeviceDetailsView(useMockServices: true)
-        .environmentObject(mockViewModel)
+        .environmentObject(mockCBViewModel)
 }

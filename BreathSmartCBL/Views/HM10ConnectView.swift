@@ -47,10 +47,11 @@ struct HM10ConnectView: View {
             .font(.largeTitle)
             .cornerRadius(15)
         }
+        .navigationBarBackButtonHidden(true)
     }
 }
 
 #Preview {
     HM10ConnectView()
-        .environmentObject(mockViewModel)
+        .environmentObject(mockCBViewModel)
 }

@@ -38,7 +38,7 @@ class CBViewModel: ObservableObject {
     
     // devices needed to show mocked preview
     init(with devices: [Device] = [],
-         bleManager: BLEManager? = nil) {
+         bleManager: BLEProvider? = nil) {
         self.devices = devices
         self.bleManager = bleManager
     }
@@ -48,8 +48,10 @@ class CBViewModel: ObservableObject {
         cancellables = []
     }
     
-    func startScan() {
-        self.devices.removeAll()
+    func startScan(removeDiscoveredDevices: Bool) {
+        if removeDiscoveredDevices {
+            self.devices.removeAll()
+        }
         bleManager?.clearDiscoveries()
         bleManager?.startScan()
     }
@@ -105,8 +107,6 @@ class CBViewModel: ObservableObject {
             .receive(on: DispatchQueue.main)
             .assign(to: \.state, on: self)
             .store(in: &cancellables)
-        
-        bleManager.startCB()
     }
 }
 

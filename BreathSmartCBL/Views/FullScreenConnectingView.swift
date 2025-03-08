@@ -47,5 +47,5 @@ struct FullScreenConnectingView: View {
 
 #Preview {
     FullScreenConnectingView()
-        .environmentObject(mockViewModel)
+        .environmentObject(mockCBViewModel)
 }
