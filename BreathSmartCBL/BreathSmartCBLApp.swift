@@ -13,7 +13,7 @@ struct BreathSmartCBLApp: App {
     let bleManager = BLEManager()
     
 //    init() {
-//        UINavigationBar.appearance().titleTextAttributes = [.foregroundColor: UIColor.white]
+//        UINavigationBar.appearance().titleTextAttributes = [.foregroundColor: UIColor.white]        
 //        UINavigationBar.appearance().largeTitleTextAttributes = [.foregroundColor: UIColor.white]
 //    }
     
@@ -21,7 +21,6 @@ struct BreathSmartCBLApp: App {
         WindowGroup {
             BreathSmartHomeView()
                 .environmentObject(BrSmViewModel(bleManager: bleManager))
-                .environmentObject(CBViewModel(bleManager: bleManager))
         }
     }
 }

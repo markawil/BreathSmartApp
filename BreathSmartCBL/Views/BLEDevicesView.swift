@@ -10,83 +10,63 @@ import SwiftUI
 @MainActor
 struct BLEDevicesView: View {
     
-    @EnvironmentObject var viewModel: CBViewModel
+    @Environment(\.presentationMode) private var mode
+    @EnvironmentObject var viewModel: BrSmViewModel
     
     @State private var showBLENotAvailableAlert = false
     @State private var showDeviceDetails = false
     @State private var showConnectionPopUp = false
+    @State private var refreshView = false
+    
+    let isMock: Bool
     
     var body: some View {
-        NavigationStack {
             VStack {
-                if viewModel.state == .notAvailable {
+                if viewModel.state == .notAvailable && !isMock {
                     Text("BLE is not available!")
                         .padding()
                         .background(.white)
-                } else if viewModel.devices.isEmpty {
+                } else if viewModel.availableDevices.isEmpty {
                     Button {
-                        viewModel.startScan(removeDiscoveredDevices: true)
+                        viewModel.startScan(clearDevices: false)
                     } label: {
                         Text("Scan for BLE Devices")
                             .font(.headline)
                             .background(.white)
                     }
                 } else {
-                    List(viewModel.devices, id: \.id) {
-                        device in
-                        Button {
-                            self.viewModel.selectedDevice = device
-                            self.viewModel.connect()
-                            self.showConnectionPopUp.toggle()
-                        } label: {
-                            VStack {
-                                HStack {
-                                    Text(device.name)
-                                        .font(.title2)
-                                        .padding(10)
-                                    Spacer()
-                                    Image(device.rssiImageName)
-                                        .renderingMode(.template)
-                                        .foregroundColor(.blue)
-                                        .aspectRatio(contentMode: .fit)
-                                        .frame(width: 35, height: 35)
-                                        .padding(10)
-                                }
-                                .padding()
-                                .background(Color(uiColor: .white))
-                            }
-                        }
-                        .tint(.black)
-                        .cornerRadius(15)
-                        .listRowBackground(Color.clear)
-                        .listRowSeparator(.hidden)
-                    }
-                    .background(Color(uiColor: UIColor.systemGroupedBackground))
-                    .padding([.leading, .trailing], -20)
-                    .navigationDestination(isPresented: $showDeviceDetails) {
-                        DeviceDetailsView()
-                            .environmentObject(viewModel)
-                    }
-                    .alert("Error", isPresented: $viewModel.errorThrown) {
-                        Button("OK", role: .cancel) { }
-                    } message: {
-                        Text(viewModel.lastError?.rawValue ?? "An error occurred.")
-                    }
+                    deviceList
                 }
             }
             .background(Color(uiColor: UIColor.systemGroupedBackground))
-            .navigationTitle("BLE Devices")
             .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .principal) {
+                    VStack {
+                        Text("BLE Devices")
+                            .bold()
+                            .foregroundColor(.white)
+                    }
+                }
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button {
+                        mode.wrappedValue.dismiss()
+                    } label: {
+                        Image(systemName: "arrow.backward")
+                            .foregroundColor(.white)
+                    }
+                }
+            }
             .toolbarBackground(Color(.blue), for: .navigationBar)
+            .toolbarBackground(.visible, for: .navigationBar)            
+            .navigationBarBackButtonHidden(true)
             .toolbarColorScheme(.dark, for: .navigationBar)
-            .toolbarBackground(.visible, for: .navigationBar)
             .onAppear() {
+                viewModel.connectToHM10 = false
                 if viewModel.isConnected {
                     viewModel.bleManager?.disconnect()
                 }
                 self.viewModel.selectedDevice = nil
-                viewModel.setupAndStart()
-                viewModel.startScan(removeDiscoveredDevices: false)
             }
             .fullScreenCover(isPresented: $showConnectionPopUp,
                              onDismiss: {
@@ -101,6 +81,48 @@ struct BLEDevicesView: View {
                         self.showConnectionPopUp = false // if it was being displayed
                     }
             }
+    }
+    
+    private var deviceList: some View {
+        List(viewModel.availableDevices, id: \.id) {
+            device in
+            Button {
+                self.viewModel.selectedDevice = device
+                self.viewModel.connect()
+                self.showConnectionPopUp.toggle()
+            } label: {
+                VStack {
+                    HStack {
+                        Text(device.name)
+                            .font(.title2)
+                            .padding(10)
+                        Spacer()
+                        Image(device.rssiImageName)
+                            .renderingMode(.template)
+                            .foregroundColor(.blue)
+                            .aspectRatio(contentMode: .fit)
+                            .frame(width: 35, height: 35)
+                            .padding(10)
+                    }
+                    .padding()
+                    .background(Color(uiColor: .white))
+                }
+            }
+            .tint(.black)
+            .cornerRadius(15)
+            .listRowBackground(Color.clear)
+            .listRowSeparator(.hidden)
+        }
+        .background(Color(uiColor: UIColor.systemGroupedBackground))
+        .padding([.leading, .trailing], -20)
+        .navigationDestination(isPresented: $showDeviceDetails) {
+            DeviceDetailsView()
+                .environmentObject(viewModel)
+        }
+        .alert("Error", isPresented: $viewModel.errorThrown) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text(viewModel.lastError?.rawValue ?? "An error occurred.")
         }
     }
 }
@@ -111,10 +133,13 @@ let mockDevices: [Device] = [
     Device(id: UUID(), name: "device 3", advertisementData: [:], rssi: -80),
 ]
 
-let mockCBViewModel = CBViewModel(with: mockDevices,
-                                  bleManager: BLEManager(state: .mockOnly))
+let mockCBViewModel = BrSmViewModel(with: emptySensorValues,
+                                    devices: mockDevices,
+                                    bleManager: BLEManager(state: .mockOnly))
 
 #Preview {
-    BLEDevicesView()
-        .environmentObject(mockCBViewModel)
+    NavigationStack {
+        BLEDevicesView(isMock: true)
+            .environmentObject(mockCBViewModel)
+    }
 }

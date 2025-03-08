@@ -50,13 +50,9 @@ struct CardItemView: View {
 
 #Preview {
     VStack {
-        CardItemView(valueItem: SensorValueItem(value: nil,
-                                                timestamp: Date(),
-                                                type: .temperature),
+        CardItemView(valueItem: SensorValueItem(type: .temperature),
                      color: Color.blue)
-        CardItemView(valueItem: SensorValueItem(value: nil,
-                                                timestamp: Date(),
-                                                type: .battery),
+        CardItemView(valueItem: SensorValueItem(type: .battery),
                      color: Color.blue)
     }
 }

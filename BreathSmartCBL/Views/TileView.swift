@@ -26,16 +26,7 @@ struct TileView: View {
     }
 }
 
-let mockSensorValues: [SensorValueItem] = [
-    .init(value: 0.15, timestamp: Date(), type: .tvoc),
-    .init(value: 101, timestamp: Date(), type: .aqi),
-    .init(value: 75.6, timestamp: Date(), type: .temperature),
-    .init(value: 50, timestamp: Date(), type: .humidity),
-    .init(value: 29.75, timestamp: Date(), type: .pressure),
-    .init(value: 85, timestamp: Date(), type: .battery)
-    ]
-
-let mockBrSmViewModel = BrSmViewModel(with: mockSensorValues,
+let mockBrSmViewModel = BrSmViewModel(with: emptySensorValues,
                                       bleManager: BLEManager(state: .mockOnly))
 
 #Preview {

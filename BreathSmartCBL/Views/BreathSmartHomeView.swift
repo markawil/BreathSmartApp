@@ -9,8 +9,7 @@ import SwiftUI
 
 struct BreathSmartHomeView: View {
     
-    @EnvironmentObject var brSmViewModel: BrSmViewModel
-    @EnvironmentObject var cbViewModel: CBViewModel
+    @EnvironmentObject var viewModel: BrSmViewModel
     
     @State private var showBLEDevices: Bool = false
     
@@ -19,24 +18,25 @@ struct BreathSmartHomeView: View {
             ZStack {
                 VStack {
                     TileView()
-                        .environmentObject(brSmViewModel)
+                        .environmentObject(viewModel)
                         .navigationDestination(isPresented: $showBLEDevices) {
-                            BLEDevicesView()
-                                .environmentObject(cbViewModel)
+                            BLEDevicesView(isMock: false)
+                                .environmentObject(viewModel)
                         }
                 }
                 .background(Color(uiColor: UIColor.systemGroupedBackground))
-                .navigationTitle("BreathSmart")
                 .toolbarBackground(Color(.blue), for: .navigationBar)
+                .navigationTitle("BreathSmart")
                 .toolbarBackground(.visible, for: .navigationBar)
                 .toolbarColorScheme(.dark, for: .navigationBar)
+                .navigationBarBackButtonHidden(true)
                 .toolbar {
-                    if !brSmViewModel.isScanning {
+                    if !viewModel.isScanning {
                         ToolbarItem(placement: .status) {
                             Button {
                                 showBLEDevices.toggle()
                             } label: {
-                                Image(brSmViewModel.isConnected ? "bluetooth" : "bluetooth_off")
+                                Image(viewModel.isConnected ? "bluetooth" : "bluetooth_off")
                                     .renderingMode(.template)
                                     .foregroundColor(.blue)
                             }
@@ -44,14 +44,13 @@ struct BreathSmartHomeView: View {
                     }
                 }
                 .onAppear {
-                    if brSmViewModel.isConnected {
-                        brSmViewModel.bleManager?.disconnect()
+                    viewModel.connectToHM10 = true
+                    if viewModel.isConnected {
+                        viewModel.bleManager?.disconnect()
                     }
-                    brSmViewModel.setupAndStart()
+                    viewModel.setupAndStart()
                 }
-                .toolbarColorScheme(.dark, for: .navigationBar)
-                .preferredColorScheme(.light)
-                if brSmViewModel.isScanning {
+                if viewModel.isScanning {
                     Color(uiColor: UIColor.systemGroupedBackground).opacity(0.85)
                         .ignoresSafeArea()
                     VStack {
@@ -72,5 +71,23 @@ struct BreathSmartHomeView: View {
 #Preview {
     BreathSmartHomeView()
         .environmentObject(mockBrSmViewModel)
-        .environmentObject(mockCBViewModel)
+}
+
+
+struct LightStatusBarModifier: ViewModifier {
+    func body(content: Content) -> some View {
+        content
+            .onAppear {
+                UIApplication.shared.statusBarStyle = .lightContent
+            }
+            .onDisappear {
+                UIApplication.shared.statusBarStyle = .default
+            }
+    }
+}
+
+extension View {
+    func enableLightStatusBar() -> some View {
+        self.modifier(LightStatusBarModifier())
+    }
 }

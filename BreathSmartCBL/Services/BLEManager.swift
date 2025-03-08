@@ -16,6 +16,7 @@ protocol BLEProvider {
     var discoveredPeripheralPublisher: AnyPublisher<(CBPeripheral, [String : Any], NSNumber), Never> { get }
     var cbStatePublisher: AnyPublisher<CBState, Never> { get }
     var lastErrorPublisher: AnyPublisher<ErrorType?, Never> { get }
+    var sensorDataPublisher: AnyPublisher<SensorValue, Never> { get }
     
     /* Properties for the connected device */
     var discoveredServices: [CBService] { get }
@@ -28,7 +29,7 @@ protocol BLEProvider {
     func connect(to: UUID)
     func disconnect()
     func send(message: String)
-    func clearDiscoveries()
+    func clearDiscoveries(completion: @escaping () -> Void)
 }
 
 class BLEManager: NSObject, BLEProvider {
@@ -38,22 +39,37 @@ class BLEManager: NSObject, BLEProvider {
     private(set) var discoveredPeripheralSubject = PassthroughSubject<(CBPeripheral, [String : Any], NSNumber), Never>()
     private(set) var cbStateSubject = CurrentValueSubject<CBState, Never>(.notAvailable)
     private(set) var lastErrorSubject = CurrentValueSubject<ErrorType?, Never>(nil)
+    private(set) var sensorDataSubject = PassthroughSubject<SensorValue, Never>()
     
     // public publishers hiding the private subjects
     var connectionStatePublisher: AnyPublisher<Bool, Never> {
-        connectionStateSubject.eraseToAnyPublisher()
+        connectionStateSubject
+            .share()
+            .eraseToAnyPublisher()
     }
     
     var discoveredPeripheralPublisher: AnyPublisher<(CBPeripheral, [String : Any], NSNumber), Never> {
-        discoveredPeripheralSubject.eraseToAnyPublisher()
+        discoveredPeripheralSubject
+            .share()
+            .eraseToAnyPublisher()
     }
     
     var cbStatePublisher: AnyPublisher<CBState, Never> {
-        cbStateSubject.eraseToAnyPublisher()
+        cbStateSubject
+            .share()
+            .eraseToAnyPublisher()
     }
     
     var lastErrorPublisher: AnyPublisher<ErrorType?, Never> {
-        lastErrorSubject.eraseToAnyPublisher()
+        lastErrorSubject
+            .share()
+            .eraseToAnyPublisher()
+    }
+    
+    var sensorDataPublisher: AnyPublisher<SensorValue, Never> {
+        sensorDataSubject
+            .share()
+            .eraseToAnyPublisher()
     }
     
     var isConnected: Bool {
@@ -101,7 +117,7 @@ class BLEManager: NSObject, BLEProvider {
     func send(message: String) {
         guard let peripheral = connectedPeripheral else { return }
         guard let name = peripheral.name, name.starts(with: "HM") else { return } // only dealing with the HM10 right now.
-        guard let characteristic = characteristics[Constants.HM10.Characteristic.data] else { return }
+        guard let characteristic = characteristics[Constants.HM10.Characteristic.data.uuidString] else { return }
                 
         guard let data = message.data(using: .utf8) else { return }
         peripheral.writeValue(data, for: characteristic, type: .withoutResponse)
@@ -117,13 +133,14 @@ class BLEManager: NSObject, BLEProvider {
     func disconnect() {
         guard cbStateSubject.value != .mockOnly else { return }
         guard let peripheral = self.connectedPeripheral else {
-            clearConnectedPeripheralDiscoveries() // go ahead and clear if periph was already nil
+            clearConnectedPeripheralDiscoveries(completion: { }) // go ahead and clear if periph was already nil
             return
         }
        
         centralManager.cancelPeripheralConnection(peripheral)
-        clearConnectedPeripheralDiscoveries()
-        self.connectedPeripheral = nil
+        clearConnectedPeripheralDiscoveries {
+            self.connectedPeripheral = nil
+        }
     }
     
     func discoverServices() {
@@ -137,18 +154,32 @@ class BLEManager: NSObject, BLEProvider {
         // read specific characteristics here if needed.
     }
     
-    func clearDiscoveries() {
+    func clearDiscoveries(completion: @escaping () -> Void) {
         DispatchQueue.main.async {
             self.discoveredPeripherals.removeAll()
-            self.clearConnectedPeripheralDiscoveries()
+            self.clearConnectedPeripheralDiscoveries(completion: completion)
         }
     }
     
-    func clearConnectedPeripheralDiscoveries() {
+    func clearConnectedPeripheralDiscoveries(completion: @escaping () -> Void) {
         DispatchQueue.main.async {
             self.discoveredServices.removeAll()
             self.characteristics.removeAll()
+            completion()
         }
+    }
+    
+    private func handleSensorData(_ data: Data) {
+        guard let dataString = String(data: data, encoding: .utf8) else {
+            return
+        }
+        
+        print("Received data: \(dataString)")
+        guard let sensorValue = SensorValue(from: dataString) else {
+            return
+        }
+        
+        sensorDataSubject.send(sensorValue)
     }
 }
 
@@ -208,7 +239,7 @@ extension BLEManager: CBCentralManagerDelegate {
         guard central == self.centralManager else { return }
         guard !discoveredPeripherals.contains(where: { $0.identifier == peripheral.identifier }) else { return }
         // ignore peripherals that aren't cool enough to reveal their names
-        guard let name = peripheral.name else { return }
+        guard let _ = peripheral.name else { return }
         
         // it's new add it
         self.discoveredPeripherals.append(peripheral)
@@ -272,6 +303,12 @@ extension BLEManager: CBPeripheralDelegate {
     func peripheral(_ peripheral: CBPeripheral,
                     didUpdateValueFor characteristic: CBCharacteristic,
                     error: (any Error)?) {
-        // implement if you want to know when a value was updated.
+        // a value was updated on the characteristic
+        switch characteristic.uuid {
+        case Constants.HM10.Characteristic.data:
+            handleSensorData(characteristic.value ?? Data())
+        default:
+            break
+        }
     }
 }

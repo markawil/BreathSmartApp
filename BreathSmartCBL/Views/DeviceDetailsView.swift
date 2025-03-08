@@ -11,7 +11,7 @@ import SwiftUI
 struct DeviceDetailsView: View {
     
     @Environment(\.presentationMode) private var mode
-    @EnvironmentObject var viewModel: CBViewModel
+    @EnvironmentObject var viewModel: BrSmViewModel
     
     let mockServices: [CBUUID] = [CBUUID(string: Constants.UUID.Service.heartRateService),
                                   CBUUID(string: Constants.UUID.Service.bodySensorLocation),
@@ -28,24 +28,16 @@ struct DeviceDetailsView: View {
     
     var body: some View {
         VStack {
-            HStack {
-                Spacer()
-                if let name = viewModel.connectedDevice?.name {
-                    if name.starts(with: "HM") {
-                        Button {
-                            showHM10View.toggle()
-                        } label: {
-                            Text("HM10")
-                        }
+            if let name = viewModel.connectedDevice?.name {
+                if name.starts(with: "HM") {
+                    Button {
+                        showHM10View.toggle()
+                    } label: {
+                        Text("Control HM10 Device")
                     }
-                } else {
-                    Text("\(viewModel.connectedDevice?.name ?? "Device 1")")
-                        .font(.title2)
-                        .padding()
+                    .padding()
                 }
-                Spacer()
             }
-            
             if useMockServices {
                 List {
                     Section(header: Text("Advertised Services")) {
@@ -72,10 +64,23 @@ struct DeviceDetailsView: View {
                         }
                     }
                 }
-                .onAppear {
-                    if !viewModel.isConnected {
-                        mode.wrappedValue.dismiss()
-                    }
+            }
+            Spacer()
+        }
+        .background(Color(uiColor: UIColor.systemGroupedBackground))
+        .navigationTitle("\(viewModel.connectedDevice?.name ?? "Device 1")")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbarBackground(Color(.blue), for: .navigationBar)
+        .toolbarBackground(.visible, for: .navigationBar)
+        .toolbarColorScheme(.dark, for: .navigationBar)
+        .navigationBarBackButtonHidden(true)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarLeading) {
+                Button {
+                    mode.wrappedValue.dismiss()
+                } label: {
+                    Image(systemName: "arrow.backward")
+                        .foregroundColor(.white)
                 }
             }
         }
@@ -87,6 +92,8 @@ struct DeviceDetailsView: View {
 }
 
 #Preview {
-    DeviceDetailsView(useMockServices: true)
-        .environmentObject(mockCBViewModel)
+    NavigationStack {
+        DeviceDetailsView(useMockServices: true)
+            .environmentObject(mockCBViewModel)
+    }
 }

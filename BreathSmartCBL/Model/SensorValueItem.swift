@@ -85,9 +85,49 @@ enum SensorValueType {
     }
 }
 
-struct SensorValueItem: Identifiable {
+class SensorValueItem: Identifiable {
     var id: UUID = UUID()
     var value: Double?
     var timestamp: Date?
     var type: SensorValueType
+    
+    init(type: SensorValueType) {
+        self.type = type
+    }
 }
+
+struct SensorValue {
+    let value: Double
+    let type: SensorValueType
+    
+    init?(from dataString: String) {
+        let parts = dataString.split(separator: ":")
+        guard parts.count == 2 else {
+            return nil
+        }
+        guard let code = Int(parts[0]),
+              let value = Double(parts[1]) else {
+            return nil
+        }
+        
+        switch code {
+        case 0:
+            self.type = .temperature
+        case 1:
+            self.type = .humidity
+        case 2:
+            self.type = .pressure
+        case 3:
+            self.type = .tvoc
+        case 4:
+            self.type = .battery
+        case 5:
+            self.type = .aqi
+        default:
+            return nil
+        }
+        
+        self.value = value
+    }
+}
+

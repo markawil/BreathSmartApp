@@ -9,7 +9,7 @@ import SwiftUI
 
 struct FullScreenConnectingView: View {
     
-    @EnvironmentObject var viewModel: CBViewModel
+    @EnvironmentObject var viewModel: BrSmViewModel
     @Environment(\.presentationMode) private var mode
     
     @State var deviceName: String = "Unknown device"

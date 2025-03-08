@@ -9,22 +9,25 @@ import Combine
 import Foundation
 
 let emptySensorValues: [SensorValueItem] = [
-    .init(value: nil, timestamp: Date(), type: .tvoc),
-    .init(value: nil, timestamp: Date(), type: .aqi),
-    .init(value: nil, timestamp: Date(), type: .temperature),
-    .init(value: nil, timestamp: Date(), type: .humidity),
-    .init(value: nil, timestamp: Date(), type: .pressure),
-    .init(value: nil, timestamp: Date(), type: .battery)
+    .init(type: .tvoc),
+    .init(type: .aqi),
+    .init(type: .temperature),
+    .init(type: .humidity),
+    .init(type: .pressure),
+    .init(type: .battery)
     ]
 
 class BrSmViewModel: ObservableObject {
     
+    @Published var availableDevices: [Device] = []
+    @Published var selectedDevice: Device? // only used by the BLEDevicesView
     @Published var isScanning: Bool = false
     @Published var isConnected: Bool = false
     @Published var errorThrown: Bool = false
     @Published var state: CBState = .notAvailable
-    
     @Published var sensorValues: [SensorValueItem] = []
+    
+    var connectToHM10 = false
     
     private var cancellables: Set<AnyCancellable> = []
     private var hasInitialized = false
@@ -37,13 +40,20 @@ class BrSmViewModel: ObservableObject {
         }
     }
     
-    var connectedDevice: Device?
+    var connectedDevice: Device? {
+        guard let peripheral = bleManager?.connectedPeripheral else { return nil }
+        guard !availableDevices.isEmpty else { return nil }
+        
+        return availableDevices.first { $0.id == peripheral.identifier }
+    }
     
     private(set) var bleManager: BLEProvider?
     
     // sensorValues needed to show mocked preview
     init(with sensorValues: [SensorValueItem] = emptySensorValues,
+         devices: [Device] = [], // just used for mocking
          bleManager: BLEProvider? = nil) {
+        self.availableDevices = devices
         self.sensorValues = sensorValues
         self.bleManager = bleManager
     }
@@ -53,20 +63,48 @@ class BrSmViewModel: ObservableObject {
         cancellables = []
     }
     
-    func scanAndConnectToHM10() {
-        bleManager?.clearDiscoveries()
-        bleManager?.startScan()
+    func startScan(clearDevices: Bool) {
+        if clearDevices {
+            self.availableDevices.removeAll()
+        }
+        bleManager?.clearDiscoveries(completion: { [weak self] in
+            self?.bleManager?.startScan()
+        })
+    }
+    
+    func connect() {
+        guard let selectedDevice = selectedDevice else { return }
+        
+        bleManager?.connect(to: selectedDevice.id)
+    }
+    
+    func reconnectToHM10() {
+        guard let device = availableDevices.first(where: { $0.name.lowercased().hasPrefix("HMSoft".lowercased()) }) else {
+            return
+        }
+        
+        self.bleManager?.connect(to: device.id)
+    }
+    
+    func sendOn() {
+        bleManager?.send(message: "YES")
+    }
+    
+    func sendOff() {
+        bleManager?.send(message: "NO")
     }
     
     func setupAndStart() {
         guard let bleManager = bleManager else { return }
         guard !hasInitialized else {
+            if connectToHM10 {
+                reconnectToHM10() // just try and reconnect to HM10
+            }
             return
         }
         
         hasInitialized = true
-        isScanning = true
-        
+          
         bleManager.lastErrorPublisher
             .receive(on: DispatchQueue.main)
             .assign(to: \.lastError, on: self)
@@ -83,9 +121,16 @@ class BrSmViewModel: ObservableObject {
             .sink { [weak self] device in
                 guard let self = self else { return }
                 guard !self.isConnected else { return }
-                // if not connected and we found the BLE Adapter, connect
-                if device.name.lowercased().hasPrefix("HMSoft".lowercased()) {
-                    self.bleManager?.connect(to: device.id)
+                
+                // add the new devices to the list of available devices
+                guard !self.availableDevices.contains(where: { $0.id == device.id }) else { return }
+                self.availableDevices.append(device)
+                
+                if self.connectToHM10 {
+                    // if not connected and we found the BLE Adapter, connect
+                    if device.name.lowercased().hasPrefix("HMSoft".lowercased()) {
+                        self.bleManager?.connect(to: device.id)
+                    }
                 }
             }
             .store(in: &cancellables)
@@ -104,7 +149,9 @@ class BrSmViewModel: ObservableObject {
                     // disconnected, continue to scan and try to connect
                     self.sensorValues = emptySensorValues
                     self.isScanning = true
-                    self.scanAndConnectToHM10()
+                    if connectToHM10 {
+                        self.startScan(clearDevices: false)
+                    }
                 }
             }
             .store(in: &cancellables)

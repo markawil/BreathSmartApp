@@ -16,6 +16,7 @@ class MockBLEManager: BLEProvider {
     private(set) var discoveredPeripheralSubject = PassthroughSubject<(CBPeripheral, [String : Any], NSNumber), Never>()
     private(set) var cbStateSubject = CurrentValueSubject<CBState, Never>(.notAvailable)
     private(set) var lastErrorSubject = CurrentValueSubject<ErrorType?, Never>(nil)
+    private(set) var sensorValueSubject = PassthroughSubject<SensorValue, Never>()
     
     // public publishers hiding the private subjects
     var connectionStatePublisher: AnyPublisher<Bool, Never> {
@@ -32,6 +33,10 @@ class MockBLEManager: BLEProvider {
     
     var lastErrorPublisher: AnyPublisher<ErrorType?, Never> {
         lastErrorSubject.eraseToAnyPublisher()
+    }
+    
+    var sensorDataPublisher: AnyPublisher<SensorValue, Never> {
+        sensorValueSubject.eraseToAnyPublisher()
     }
     
     var isConnected: Bool {
@@ -68,8 +73,7 @@ class MockBLEManager: BLEProvider {
         
     }
     
-    func disconnect() {
-        clearConnectedPeripheralDiscoveries()
+    func disconnect() {        
         self.connectedPeripheral = nil
     }
     
@@ -81,17 +85,8 @@ class MockBLEManager: BLEProvider {
         
     }
     
-    func clearDiscoveries() {
-        DispatchQueue.main.async {
-            self.clearConnectedPeripheralDiscoveries()
-        }
-    }
-    
-    func clearConnectedPeripheralDiscoveries() {
-        DispatchQueue.main.async {
-            self.discoveredServices.removeAll()
-            self.characteristics.removeAll()
-        }
+    func clearDiscoveries(completion: @escaping () -> Void) {
+        
     }
     
 }

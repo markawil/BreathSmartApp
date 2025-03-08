@@ -5,6 +5,7 @@
 //  Created by Mark Wilkinson on 1/25/25.
 //
 
+import CoreBluetooth
 import Foundation
 
 enum CBState {
@@ -48,6 +49,8 @@ enum CBLKeys: String {
 
 // Used for mocking the details view only
 struct Constants {
+    
+    // Fake service and characteristics for mock view
     struct UUID {
         struct Service {
             static let heartRateService = "0000180D-0000-1000-8000-00805F9B34FB"
@@ -62,13 +65,14 @@ struct Constants {
         }
     }
     
+    // Actual expected characteristic and service UUID from HM10 device
     struct HM10 {
         struct Service {
-            static let data = "FFE0"
+            static let data = CBUUID(string: "FFE0")
         }
         
         struct Characteristic {
-            static let data = "FFE1"
+            static let data = CBUUID(string: "FFE1")
         }
     }
 }
