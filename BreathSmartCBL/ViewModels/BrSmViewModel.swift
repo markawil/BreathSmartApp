@@ -8,15 +8,6 @@
 import Combine
 import Foundation
 
-let emptySensorValues: [SensorValueItem] = [
-    .init(type: .tvoc),
-    .init(type: .aqi),
-    .init(type: .temperature),
-    .init(type: .humidity),
-    .init(type: .pressure),
-    .init(type: .battery)
-    ]
-
 class BrSmViewModel: ObservableObject {
     
     @Published var availableDevices: [Device] = []
@@ -159,6 +150,20 @@ class BrSmViewModel: ObservableObject {
         bleManager.cbStatePublisher
             .receive(on: DispatchQueue.main)
             .assign(to: \.state, on: self)
+            .store(in: &cancellables)
+        
+        bleManager.sensorDataPublisher
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] sensorValue in
+                guard let self = self else { return }
+                guard let sensorValueItem = sensorValues.first(where: { $0.type == sensorValue.type }) else {
+                    return
+                }
+                sensorValueItem.value = sensorValue.value
+                sensorValueItem.timestamp = Date()
+                // cheap way to tell the view to reload it's observed values.
+                self.objectWillChange.send()
+            }
             .store(in: &cancellables)
         
         bleManager.startCB()

@@ -1,5 +1,5 @@
 //
-//  BreathSmartCBLApp.swift
+//  BreatheSmartCBLApp.swift
 //  BreathSmartCBL
 //
 //  Created by MarkWilkinson on 12/13/24.
@@ -8,7 +8,7 @@
 import SwiftUI
 
 @main
-struct BreathSmartCBLApp: App {
+struct BreatheSmartCBLApp: App {
     
     let bleManager = BLEManager()
     
@@ -19,7 +19,7 @@ struct BreathSmartCBLApp: App {
     
     var body: some Scene {
         WindowGroup {
-            BreathSmartHomeView()
+            BreatheSmartHomeView()
                 .environmentObject(BrSmViewModel(bleManager: bleManager))
         }
     }

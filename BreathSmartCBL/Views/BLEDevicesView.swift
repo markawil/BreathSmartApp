@@ -133,7 +133,7 @@ let mockDevices: [Device] = [
     Device(id: UUID(), name: "device 3", advertisementData: [:], rssi: -80),
 ]
 
-let mockCBViewModel = BrSmViewModel(with: emptySensorValues,
+let mockCBViewModel = BrSmViewModel(with: mockSensorValues,
                                     devices: mockDevices,
                                     bleManager: BLEManager(state: .mockOnly))
 

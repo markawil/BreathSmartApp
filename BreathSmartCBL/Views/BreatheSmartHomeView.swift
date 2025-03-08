@@ -1,5 +1,5 @@
 //
-//  BreathSmartHomeView.swift
+//  BreatheSmartHomeView.swift
 //  BreathSmartCBL
 //
 //  Created by Mark Wilkinson on 2/17/25.
@@ -7,7 +7,7 @@
 
 import SwiftUI
 
-struct BreathSmartHomeView: View {
+struct BreatheSmartHomeView: View {
     
     @EnvironmentObject var viewModel: BrSmViewModel
     
@@ -26,7 +26,7 @@ struct BreathSmartHomeView: View {
                 }
                 .background(Color(uiColor: UIColor.systemGroupedBackground))
                 .toolbarBackground(Color(.blue), for: .navigationBar)
-                .navigationTitle("BreathSmart")
+                .navigationTitle("BreatheSmart")
                 .toolbarBackground(.visible, for: .navigationBar)
                 .toolbarColorScheme(.dark, for: .navigationBar)
                 .navigationBarBackButtonHidden(true)
@@ -69,25 +69,6 @@ struct BreathSmartHomeView: View {
 }
 
 #Preview {
-    BreathSmartHomeView()
+    BreatheSmartHomeView()
         .environmentObject(mockBrSmViewModel)
-}
-
-
-struct LightStatusBarModifier: ViewModifier {
-    func body(content: Content) -> some View {
-        content
-            .onAppear {
-                UIApplication.shared.statusBarStyle = .lightContent
-            }
-            .onDisappear {
-                UIApplication.shared.statusBarStyle = .default
-            }
-    }
-}
-
-extension View {
-    func enableLightStatusBar() -> some View {
-        self.modifier(LightStatusBarModifier())
-    }
 }

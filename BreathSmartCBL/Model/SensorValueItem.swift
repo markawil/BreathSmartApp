@@ -85,17 +85,21 @@ enum SensorValueType {
     }
 }
 
+// mutable data holder for the cards on the Home screen
 class SensorValueItem: Identifiable {
     var id: UUID = UUID()
     var value: Double?
     var timestamp: Date?
     var type: SensorValueType
     
-    init(type: SensorValueType) {
+    init(value: Double? = nil, timestamp: Date? = nil, type: SensorValueType) {
+        self.value = value
+        self.timestamp = timestamp
         self.type = type
     }
 }
 
+// immutable to hold values coming back from the Device
 struct SensorValue {
     let value: Double
     let type: SensorValueType
@@ -130,4 +134,13 @@ struct SensorValue {
         self.value = value
     }
 }
+
+let emptySensorValues: [SensorValueItem] = [
+    .init(type: .tvoc),
+    .init(type: .aqi),
+    .init(type: .temperature),
+    .init(type: .humidity),
+    .init(type: .pressure),
+    .init(type: .battery)
+    ]
 
