@@ -17,7 +17,7 @@ struct TileView: View {
         ScrollView {
             LazyVGrid(columns: columns,
                       alignment: .leading,
-                      spacing: 20) {
+                      spacing: 20) {                
                 ForEach(viewModel.sensorValues) { value in
                     CardItemView(valueItem: value, color: value.type.backgroundColor)
                 }
@@ -28,7 +28,7 @@ struct TileView: View {
 
 let mockSensorValues: [SensorValueItem] = [
     .init(value: 0.15, timestamp: Date(), type: .tvoc),
-    .init(value: 101, timestamp: Date(), type: .aqi),
+    .init(value: 250, timestamp: Date(), type: .co2),
     .init(value: 75.6, timestamp: Date(), type: .temperature),
     .init(value: 50, timestamp: Date(), type: .humidity),
     .init(value: 29.75, timestamp: Date(), type: .pressure),

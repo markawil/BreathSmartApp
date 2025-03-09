@@ -160,9 +160,7 @@ class BrSmViewModel: ObservableObject {
                     return
                 }
                 sensorValueItem.value = sensorValue.value
-                sensorValueItem.timestamp = Date()
-                // cheap way to tell the view to reload it's observed values.
-                self.objectWillChange.send()
+                sensorValueItem.timestamp = Date()                
             }
             .store(in: &cancellables)
         

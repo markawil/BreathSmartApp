@@ -151,7 +151,11 @@ class BLEManager: NSObject, BLEProvider {
     private func initialReadCharacteristics() {
         guard let peripheral = self.connectedPeripheral else { return }
         
-        // read specific characteristics here if needed.
+        // only interested in the data characteristic of the HM10
+        if let characteristic = characteristics[Constants.HM10.Characteristic.data.uuidString] {
+            peripheral.readValue(for: characteristic)
+            peripheral.setNotifyValue(true, for: characteristic)
+        }
     }
     
     func clearDiscoveries(completion: @escaping () -> Void) {

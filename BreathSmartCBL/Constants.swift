@@ -7,6 +7,7 @@
 
 import CoreBluetooth
 import Foundation
+import SwiftUI
 
 enum CBState {
     case notAvailable
@@ -75,5 +76,18 @@ struct Constants {
             static let data = CBUUID(string: "FFE1")
         }
     }
+}
+
+extension Color {
+    
+    static let theme = ColorTheme()
+}
+
+struct ColorTheme {
+    
+    let redColor = Color("redColor")
+    let grayColor = Color("grayColor")
+    let greenColor = Color("greenColor")
+    let tealColor = Color("tealColor")
 }
 

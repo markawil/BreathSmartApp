@@ -70,15 +70,16 @@ class MockBLEManager: BLEProvider {
     }
         
     func connect(to uuid: UUID) {
-        
+        connectionStateSubject.send(true)
     }
     
     func disconnect() {        
         self.connectedPeripheral = nil
+        connectionStateSubject.send(false)
     }
     
     func discoverServices() {
-        
+        // generate a list of services for a unit test
     }
     
     private func initialReadCharacteristics() {
@@ -86,7 +87,8 @@ class MockBLEManager: BLEProvider {
     }
     
     func clearDiscoveries(completion: @escaping () -> Void) {
-        
+        discoveredServices = []
+        characteristics = [:]
     }
     
 }

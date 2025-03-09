@@ -14,7 +14,7 @@ enum SensorValueType {
     case pressure
     case tvoc
     case battery
-    case aqi
+    case co2
     
     var unit: String {
         switch self {
@@ -27,9 +27,9 @@ enum SensorValueType {
         case .tvoc:
             return "ppb"
         case .battery:
-            return "%"
-        case .aqi:
-            return "AQI"
+            return "V"
+        case .co2:
+            return "ppm"
         }
     }
     
@@ -42,11 +42,11 @@ enum SensorValueType {
         case .pressure:
                 .blue
         case .tvoc:
-                .red
+            Color.theme.redColor
         case .battery:
                 .purple
-        case .aqi:
-                .teal
+        case .co2:
+            Color.theme.tealColor
         }
     }
     
@@ -62,8 +62,8 @@ enum SensorValueType {
             return "TVOC"
         case .battery:
             return "Battery"
-        case .aqi:
-            return "AQI"
+        case .co2:
+            return "CO2"
         }
     }
     
@@ -79,20 +79,22 @@ enum SensorValueType {
             return "allergens"
         case .battery:
             return "bolt.batteryblock"
-        case .aqi:
+        case .co2:
             return "sun.haze"
         }
     }
 }
 
 // mutable data holder for the cards on the Home screen
-class SensorValueItem: Identifiable {
+class SensorValueItem: Identifiable, ObservableObject {
     var id: UUID = UUID()
-    var value: Double?
+    @Published var value: Double?
     var timestamp: Date?
     var type: SensorValueType
     
-    init(value: Double? = nil, timestamp: Date? = nil, type: SensorValueType) {
+    init(value: Double? = nil,
+         timestamp: Date? = nil,
+         type: SensorValueType) {
         self.value = value
         self.timestamp = timestamp
         self.type = type
@@ -118,15 +120,15 @@ struct SensorValue {
         case 0:
             self.type = .temperature
         case 1:
-            self.type = .humidity
-        case 2:
-            self.type = .pressure
-        case 3:
             self.type = .tvoc
+        case 2:
+            self.type = .co2
+        case 3:
+            self.type = .humidity
         case 4:
-            self.type = .battery
+            self.type = .pressure
         case 5:
-            self.type = .aqi
+            self.type = .battery
         default:
             return nil
         }
@@ -137,7 +139,7 @@ struct SensorValue {
 
 let emptySensorValues: [SensorValueItem] = [
     .init(type: .tvoc),
-    .init(type: .aqi),
+    .init(type: .co2),
     .init(type: .temperature),
     .init(type: .humidity),
     .init(type: .pressure),

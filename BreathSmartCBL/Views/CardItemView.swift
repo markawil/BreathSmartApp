@@ -9,11 +9,11 @@ import SwiftUI
 
 struct CardItemView: View {
     
-    private var valueItem: SensorValueItem
+    @StateObject var valueItem: SensorValueItem
     private var color: Color
     
     init(valueItem: SensorValueItem, color: Color) {
-        self.valueItem = valueItem
+        self._valueItem = StateObject(wrappedValue: valueItem)
         self.color = color
     }
     

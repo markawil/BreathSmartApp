@@ -51,18 +51,24 @@ struct BreatheSmartHomeView: View {
                     viewModel.setupAndStart()
                 }
                 if viewModel.isScanning {
-                    Color(uiColor: UIColor.systemGroupedBackground).opacity(0.85)
-                        .ignoresSafeArea()
-                    VStack {
-                        ProgressView()
-                            .progressViewStyle(CircularProgressViewStyle(tint: .blue))
-                            .scaleEffect(2.0, anchor: .center) // Makes the spinner larger
-                        Text("Connecting to device...")
-                            .font(.headline)
-                            .foregroundStyle(Color.blue)
-                            .padding()
-                    }
+                    spinnerOverlay
                 }
+            }
+        }
+    }
+    
+    private var spinnerOverlay: some View {
+        ZStack {
+            Color(uiColor: UIColor.systemGroupedBackground).opacity(0.85)
+                .ignoresSafeArea(edges: [.leading, .trailing])
+            VStack {
+                ProgressView()
+                    .progressViewStyle(CircularProgressViewStyle(tint: .blue))
+                    .scaleEffect(2.0, anchor: .center) // Makes the spinner larger
+                Text("Connecting to device...")
+                    .font(.headline)
+                    .foregroundStyle(Color.blue)
+                    .padding()
             }
         }
     }
