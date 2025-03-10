@@ -25,6 +25,10 @@ struct BreatheSmartHomeView: View {
                             BLEDevicesView(isMock: false)
                                 .environmentObject(viewModel)
                         }
+                        .navigationDestination(isPresented: $showCharts) {
+                            ChartsView()
+                                .environmentObject(ChartsViewModel(realmManager: RealmManager(useInMemory: true)))
+                        }
                 }
                 .background(Color(uiColor: UIColor.systemGroupedBackground))
                 .toolbarBackground(Color(.blue), for: .navigationBar)
@@ -85,7 +89,7 @@ struct BreatheSmartHomeView: View {
     
     private var spinnerOverlay: some View {
         ZStack {
-            Color(uiColor: UIColor.systemGroupedBackground).opacity(0.85)
+            Color(uiColor: UIColor.systemGroupedBackground).opacity(0.75)
                 .ignoresSafeArea(edges: [.leading, .trailing])
             VStack {
                 ProgressView()

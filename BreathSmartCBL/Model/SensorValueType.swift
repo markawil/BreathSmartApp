@@ -8,7 +8,7 @@
 import Foundation
 import SwiftUI
 
-enum SensorValueType: Int {
+enum SensorValueType: Int, CaseIterable {
     case temperature
     case humidity
     case pressure
