@@ -12,6 +12,8 @@ struct BreatheSmartHomeView: View {
     @EnvironmentObject var viewModel: BrSmViewModel
     
     @State private var showBLEDevices: Bool = false
+    @State private var showCharts: Bool = false
+    @State private var showBio: Bool = false
     
     var body: some View {
         NavigationStack {
@@ -36,7 +38,26 @@ struct BreatheSmartHomeView: View {
                             Button {
                                 showBLEDevices.toggle()
                             } label: {
-                                Image(viewModel.isConnected ? "bluetooth" : "bluetooth_off")
+                                Image(viewModel.isConnected ? "bluetooth" : "bluetooth_off")                            .resizable()
+                                    .renderingMode(.template)
+                                    .foregroundColor(.blue)
+                                    .frame(width: 30, height: 30)
+                            }
+                        }
+                        ToolbarItem(placement: .status) {
+                            Button {
+                                showCharts.toggle()
+                            } label: {
+                                Image(systemName: "chart.xyaxis.line")
+                                    .renderingMode(.template)
+                                    .foregroundColor(.blue)
+                            }
+                        }
+                        ToolbarItem(placement: .status) {
+                            Button {
+                                showBio.toggle()
+                            } label: {
+                                Image(systemName: "info.circle")
                                     .renderingMode(.template)
                                     .foregroundColor(.blue)
                             }
@@ -50,6 +71,11 @@ struct BreatheSmartHomeView: View {
                     }
                     viewModel.setupAndStart()
                 }
+                .fullScreenCover(isPresented: $showBio) {
+                    GithubUserView()
+                        .environmentObject(GithubUserViewModel(username: "markawil"))
+                }
+                
                 if viewModel.isScanning {
                     spinnerOverlay
                 }
