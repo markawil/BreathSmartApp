@@ -7,6 +7,10 @@
 
 import Foundation
 
+/*
+ BLE Device value type used by the View and ViewModel so as
+ to abstract CoreBluetooth's types behind the service layer.
+ */
 struct Device: Identifiable, Hashable {
     
     let id: UUID

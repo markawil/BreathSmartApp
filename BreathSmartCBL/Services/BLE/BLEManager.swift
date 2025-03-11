@@ -9,29 +9,10 @@ import Combine
 import CoreBluetooth
 import Foundation
 
-protocol BLEProvider {
-    
-    /* Combine Publishers for BLE states */
-    var connectionStatePublisher: AnyPublisher<Bool, Never> { get }
-    var discoveredPeripheralPublisher: AnyPublisher<(CBPeripheral, [String : Any], NSNumber), Never> { get }
-    var cbStatePublisher: AnyPublisher<CBState, Never> { get }
-    var lastErrorPublisher: AnyPublisher<ErrorType?, Never> { get }
-    var sensorDataPublisher: AnyPublisher<SensorValue, Never> { get }
-    
-    /* Properties for the connected device */
-    var discoveredServices: [CBService] { get }
-    var characteristics: [String: CBCharacteristic] { get }
-    var isConnected: Bool { get }
-    var connectedPeripheral: CBPeripheral? { get }
-    
-    func startCB()
-    func startScan()
-    func connect(to: UUID)
-    func disconnect()
-    func send(message: String)
-    func clearDiscoveries(completion: @escaping () -> Void)
-}
-
+/*
+ Implementation of the BLEProvider that offers subscriptions
+ for BLE events through CoreBluetooth.
+ */
 class BLEManager: NSObject, BLEProvider {
     
     // private publisher subjects
@@ -44,6 +25,7 @@ class BLEManager: NSObject, BLEProvider {
     // public publishers hiding the private subjects
     var connectionStatePublisher: AnyPublisher<Bool, Never> {
         connectionStateSubject
+//            .dropFirst() // needed, but need to fix UI issue first when this is enabled.
             .share()
             .eraseToAnyPublisher()
     }
