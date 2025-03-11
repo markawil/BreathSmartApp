@@ -8,6 +8,9 @@
 import RealmSwift
 import Foundation
 
+/*
+ A class that manages a Realm instance.
+ */
 class RealmManager {
     
     private var useInMemory: Bool

@@ -8,7 +8,7 @@
 import SwiftUI
 import Foundation
 
-// mutable data holder for the cards on the Home screen
+// mutable data holder for the cards on the Home screen representing sensor readings.
 class SensorValueItem: Identifiable, ObservableObject {
     var id: UUID = UUID()
     @Published var value: Double?

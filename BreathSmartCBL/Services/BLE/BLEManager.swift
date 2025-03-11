@@ -9,6 +9,10 @@ import Combine
 import CoreBluetooth
 import Foundation
 
+/*
+ Implementation of the BLEProvider that offers subscriptions
+ for BLE events through CoreBluetooth.
+ */
 class BLEManager: NSObject, BLEProvider {
     
     // private publisher subjects
@@ -21,7 +25,7 @@ class BLEManager: NSObject, BLEProvider {
     // public publishers hiding the private subjects
     var connectionStatePublisher: AnyPublisher<Bool, Never> {
         connectionStateSubject
-//            .dropFirst()
+//            .dropFirst() // needed, but need to fix UI issue first when this is enabled.
             .share()
             .eraseToAnyPublisher()
     }

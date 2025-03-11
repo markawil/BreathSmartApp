@@ -8,6 +8,9 @@
 import Combine
 import Foundation
 
+/*
+ Service that provides a github user's basic information
+ */
 protocol GithuUserProvider {
     
     var userPublisher: AnyPublisher<GithubUser?, Never> { get }

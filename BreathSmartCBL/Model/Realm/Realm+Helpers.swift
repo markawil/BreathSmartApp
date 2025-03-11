@@ -8,6 +8,9 @@
 import RealmSwift
 import Foundation
 
+/*
+ Useful extension methods to ineract with Realm.
+ */
 extension RealmManager {
     
     @discardableResult

@@ -8,6 +8,9 @@
 import Foundation
 import SwiftUI
 
+/*
+ The possible sensor value types that the device can send out.
+ */
 enum SensorValueType: Int, CaseIterable {
     case temperature
     case humidity

@@ -8,6 +8,9 @@
 import Combine
 import Foundation
 
+/*
+ Helper class with methods returning Publishers for network calls.
+ */
 class NetworkManager {
     
     enum NetworkingError: LocalizedError {

@@ -9,6 +9,9 @@ import CoreBluetooth
 import Combine
 import Foundation
 
+/*
+ A combine Publisher interface for using CoreBluetooth
+ */
 protocol BLEProvider {
     
     /* Combine Publishers for BLE states */

@@ -9,6 +9,9 @@ import CoreBluetooth
 import Foundation
 import SwiftUI
 
+/*
+ Possible states of CoreBluetooth
+ */
 enum CBState {
     case notAvailable
     case resetting
@@ -48,7 +51,7 @@ enum CBLKeys: String {
     case advDataSolicitedServiceKey = "CBAdvertisementDataSolicitedServiceUUIDsKey"
 }
 
-// Used for mocking the details view only
+// Constants for the Device Details View and CoreBluetooth services and characteristic UUIDs
 struct Constants {
     
     // Fake service and characteristics for mock view
@@ -78,6 +81,9 @@ struct Constants {
     }
 }
 
+/*
+ A simple color extension for home view colors.
+ */
 extension Color {
     
     static let theme = ColorTheme()
