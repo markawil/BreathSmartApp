@@ -15,7 +15,8 @@ struct LineChartView: View {
     let values: [ChartValue]
     let sensorType: SensorValueType
     
-    init(values: [ChartValue], sensorType: SensorValueType) {
+    init(values: [ChartValue],
+         sensorType: SensorValueType) {
         self.values = values
         self.sensorType = sensorType
         linearGradient = LinearGradient(gradient: Gradient(colors: [sensorType.backgroundColor.opacity(0.5), sensorType.backgroundColor.opacity(0.1)]),
@@ -33,13 +34,13 @@ struct LineChartView: View {
             }
             .interpolationMethod(.cardinal)
             
-            // if we want to show a gradient underneath
-//            ForEach(values) { value in
-//                AreaMark(x: value.xValue,
-//                         y: value.yValue)
-//            }
-//            .interpolationMethod(.cardinal)
-//            .foregroundStyle(linearGradient)
+//             if we want to show a gradient underneath
+            ForEach(values) { value in
+                AreaMark(x: value.xValue,
+                         y: value.yValue)
+            }
+            .interpolationMethod(.cardinal)
+            .foregroundStyle(linearGradient)
             
         }
         .chartYAxisLabel { Text("\(sensorType.unit)") }
