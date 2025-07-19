@@ -18,6 +18,8 @@ class BrSmViewModel: ObservableObject {
     @Published var state: CBState = .notAvailable
     @Published var sensorValues: [SensorValueItem] = []
     
+    // needed to indicate we're on the HomeView and only want to connect to HM10,
+    // otherwise we're on the all devices view and can connect to any device
     var connectToHM10 = false
     
     private var cancellables: Set<AnyCancellable> = []
@@ -117,8 +119,7 @@ class BrSmViewModel: ObservableObject {
                 guard !self.availableDevices.contains(where: { $0.id == device.id }) else { return }
                 self.availableDevices.append(device)
                 
-                if self.connectToHM10 {
-                    // if not connected and we found the BLE Adapter, connect
+                if self.connectToHM10 && !isConnected {
                     if device.name.lowercased().hasPrefix("HMSoft".lowercased()) {
                         self.bleManager?.connect(to: device.id)
                     }
@@ -132,7 +133,7 @@ class BrSmViewModel: ObservableObject {
                 guard let self = self else { return }
                 self.isConnected = connected
                 if connected {
-                    // show a noticeable delay in connecting
+                    // show a noticeable delay in connecting and let the spinner go for 2 more seconds
                     DispatchQueue.main.asyncAfter(deadline: .now() + 2) { [weak self] in
                         self?.isScanning = false
                     }

@@ -25,7 +25,6 @@ class BLEManager: NSObject, BLEProvider {
     // public publishers hiding the private subjects
     var connectionStatePublisher: AnyPublisher<Bool, Never> {
         connectionStateSubject
-//            .dropFirst() // needed, but need to fix UI issue first when this is enabled.
             .share()
             .eraseToAnyPublisher()
     }
@@ -102,7 +101,7 @@ class BLEManager: NSObject, BLEProvider {
         guard let characteristic = characteristics[Constants.HM10.Characteristic.data.uuidString] else { return }
                 
         guard let data = message.data(using: .utf8) else { return }
-        peripheral.writeValue(data, for: characteristic, type: .withoutResponse)
+        peripheral.writeValue(data, for: characteristic, type: .withResponse)
     }
         
     func connect(to uuid: UUID) {
@@ -247,12 +246,22 @@ extension BLEManager: CBCentralManagerDelegate {
     func centralManager(_ central: CBCentralManager,
                         didFailToConnect peripheral: CBPeripheral,
                         error: Error?) {
+        if let error = error {
+            print("❌ didFailToConnect error: \(error.localizedDescription)")
+            return
+        }
+        
         self.lastErrorSubject.send(.failedToConnect)
     }
     
     func centralManager(_ central: CBCentralManager,
                         didDisconnectPeripheral peripheral: CBPeripheral,
                         error: (any Error)?) {
+        if let error = error {
+            print("❌ didDisconnectPeripheral error: \(error.localizedDescription)")
+            return
+        }
+        
         guard self.connectedPeripheral?.identifier == peripheral.identifier else { return }
         
         disconnect()
@@ -263,6 +272,10 @@ extension BLEManager: CBPeripheralDelegate {
     
     func peripheral(_ peripheral: CBPeripheral,
                     didDiscoverServices error: (any Error)?) {
+        if let error = error {
+            print("❌ didDiscoverServices error: \(error.localizedDescription)")
+            return
+        }
         
         self.discoveredServices.removeAll()
         self.discoveredServices.append(contentsOf: peripheral.services ?? [])
@@ -275,6 +288,11 @@ extension BLEManager: CBPeripheralDelegate {
     func peripheral(_ peripheral: CBPeripheral,
                     didDiscoverCharacteristicsFor service: CBService,
                     error: (any Error)?) {
+        if let error = error {
+            print("❌ didDiscoverCharacteristicsFor error: \(error.localizedDescription)")
+            return
+        }
+        
         guard let _ = self.connectedPeripheral else { return }
         guard let characteristics = service.characteristics else { return }
         
@@ -289,12 +307,24 @@ extension BLEManager: CBPeripheralDelegate {
     func peripheral(_ peripheral: CBPeripheral,
                     didUpdateValueFor characteristic: CBCharacteristic,
                     error: (any Error)?) {
+        if let error = error {
+            print("❌ didUpdateValueForCharacteristic error: \(error.localizedDescription)")
+            return
+        }
+        
         // a value was updated on the characteristic
         switch characteristic.uuid {
         case Constants.HM10.Characteristic.data:
             handleSensorData(characteristic.value ?? Data())
         default:
+            print("❌ we got a characteristic we weren't expecting: \(characteristic.uuid.uuidString)")
             break
         }
+    }
+    
+    func peripheral(_ peripheral: CBPeripheral,
+                    didWriteValueFor characteristic: CBCharacteristic,
+                    error: (any Error)?) {
+        print("Peripheral did write value: \(characteristic.value ?? Data()) for characteristic: \(characteristic.uuid.uuidString)")
     }
 }

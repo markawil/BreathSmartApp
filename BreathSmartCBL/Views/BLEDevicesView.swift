@@ -21,7 +21,7 @@ struct BLEDevicesView: View {
     let isMock: Bool
     
     var body: some View {
-            VStack {
+            ZStack {
                 if viewModel.state == .notAvailable && !isMock {
                     Text("BLE is not available!")
                         .padding()
@@ -91,22 +91,20 @@ struct BLEDevicesView: View {
                 self.viewModel.connect()
                 self.showConnectionPopUp.toggle()
             } label: {
-                VStack {
-                    HStack {
-                        Text(device.name)
-                            .font(.title2)
-                            .padding(10)
-                        Spacer()
-                        Image(device.rssiImageName)
-                            .renderingMode(.template)
-                            .foregroundColor(.blue)
-                            .aspectRatio(contentMode: .fit)
-                            .frame(width: 35, height: 35)
-                            .padding(10)
-                    }
-                    .padding()
-                    .background(Color(uiColor: .white))
+                HStack {
+                    Text(device.name)
+                        .font(.title2)
+                        .padding(10)
+                    Spacer()
+                    Image(device.rssiImageName)
+                        .renderingMode(.template)
+                        .foregroundColor(.blue)
+                        .aspectRatio(contentMode: .fit)
+                        .frame(width: 35, height: 35)
+                        .padding(10)
                 }
+                .padding()
+                .background(Color(uiColor: .white))
             }
             .tint(.black)
             .cornerRadius(15)
@@ -131,6 +129,9 @@ let mockDevices: [Device] = [
     Device(id: UUID(), name: "device 1", advertisementData: [:], rssi: -30),
     Device(id: UUID(), name: "device 2", advertisementData: [:], rssi: -60),
     Device(id: UUID(), name: "device 3", advertisementData: [:], rssi: -80),
+    Device(id: UUID(), name: "device 4", advertisementData: [:], rssi: -80),
+    Device(id: UUID(), name: "device 5", advertisementData: [:], rssi: -80),
+    Device(id: UUID(), name: "device 6", advertisementData: [:], rssi: -80),
 ]
 
 let mockCBViewModel = BrSmViewModel(with: mockSensorValues,

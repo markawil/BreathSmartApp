@@ -27,6 +27,8 @@ protocol BLEProvider {
     var isConnected: Bool { get }
     var connectedPeripheral: CBPeripheral? { get }
     
+    /* Methods for starting CoreBluetooth, scanning, connecting, disconnecting and sending
+       messages to the HM10 or any connected device */
     func startCB()
     func startScan()
     func connect(to: UUID)
